@@ -22,6 +22,7 @@ const ATTEMPT_CAP = 4000;
 const QA_CAP = 200;
 const HISTORY_CAP = 400;
 const GLOSS_CAP = 500;
+const CHAT_CAP = 100;
 
 // One curriculum's engine state — the same shape the Y5 trainer stored at top
 // level, minus everything that moved into the shell.
@@ -35,6 +36,7 @@ export function curriculumState() {
     history: [],       // { day, kind, topicId, total, correct, minutes }
     attempts: [],      // { d, t, tier, ok }
     qaLog: [],         // { day, topicId, q, a, source }
+    chats: [],         // buddy conversations { day, view, topicId, assisted, messages }
     glossCache: {},    // normalised English word -> German gloss from the tutor
     activeSession: null,
     focusSession: null,
@@ -125,6 +127,7 @@ export function capState(state) {
     if (c.attempts.length > ATTEMPT_CAP) c.attempts = c.attempts.slice(-ATTEMPT_CAP);
     if (c.qaLog.length > QA_CAP) c.qaLog = c.qaLog.slice(-QA_CAP);
     if (c.history.length > HISTORY_CAP) c.history = c.history.slice(-HISTORY_CAP);
+    if (c.chats.length > CHAT_CAP) c.chats = c.chats.slice(-CHAT_CAP);
     const words = Object.keys(c.glossCache ?? {});
     if (words.length > GLOSS_CAP) {
       for (const w of words.slice(0, words.length - GLOSS_CAP)) delete c.glossCache[w];

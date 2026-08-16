@@ -44,3 +44,5 @@ export const journeyMeta = {
   strandOf: (id) => byId.get(id)?.strand ?? null,
   prereqsOf: (id) => PREREQS[id] ?? [],
 };
+
+export { diagnosticItems } from './diagnostic.js';

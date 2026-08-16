@@ -8,6 +8,21 @@ export const store = {
   save() { storage.save(this.state); },
 };
 
+// The active maths curriculum slice — the engine state the session screens run
+// on. A function, not a snapshot: restore/import may swap store.state wholesale.
+export function cur() {
+  return storage.activeCurriculum(store.state);
+}
+
+// One ring-buffered log per curriculum of everything the child asked for help
+// with (lesson Q&A, tapped-word glosses, reopened explanations), read by the
+// parent corner. Lives here because three screens write it and session.js
+// importing them back would close a cycle.
+export function logQa(topicId, q, a, source) {
+  cur().qaLog.push({ day: storage.dayKey(), topicId: topicId ?? null, q, a, source });
+  store.save();
+}
+
 const screens = {};
 let current = { name: 'home', params: null };
 let rootEl = null;
@@ -51,6 +66,9 @@ export function h(tag, attrs = {}, ...children) {
   }
   return el;
 }
+
+export const PRAISE = ['Brilliant!', 'Nailed it!', 'Great work!', 'Spot on!', 'You got it!', 'Super!', 'Exactly right!'];
+export const ENCOURAGE = ['Good try — look at this:', 'Nearly! Here is a clue:', 'Not quite — check this out:'];
 
 export function toast(msg, ms = 2200) {
   const t = h('div', { class: 'toast' }, msg);

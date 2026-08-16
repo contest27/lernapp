@@ -416,3 +416,6 @@ h1, h2, h3 { margin: 0 0 8px; }
 .card input { border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; flex: 1; min-width: 0; }
 .row.wrap { flex-wrap: wrap; }
 .btn.danger { color: var(--bad); }
+.hub-go { display: block; width: 100%; }
+.hub-go:active { transform: scale(0.985); }
+.hub-cta { color: var(--brand-dark); font-weight: 800; margin-top: 6px; }

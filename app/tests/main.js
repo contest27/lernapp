@@ -33,6 +33,10 @@ async function run() {
       gen: await import('../js/maths/content/gen.js'),
       glossary: await import('../js/maths/content/glossary.js'),
       shellStorage: await import('../js/shell/storage.js'),
+      lesson: await import('../js/ui/lesson.js'),
+      gloss: await import('../js/ui/gloss.js'),
+      focus: await import('../js/ui/focus.js'),
+      tutor: await import('../js/qa/tutor.js'),
     };
   } catch (e) {
     results.push({ name: 'MODULE IMPORTS', ok: false, err: String(e) });
@@ -396,14 +400,79 @@ async function run() {
     ok(pct >= 90, `offline glossary covers only ${pct}% of explanation words (want >= 90%)`);
   });
 
-  test('sw: precache names every content module and the version moves', () => {
+  test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v2'"), 'CACHE_VERSION was not bumped for the 6A content release');
+    ok(swText.includes("'lernapp-v3'"), 'CACHE_VERSION was not bumped for the practice-UI release');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
-      "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'"]) {
+      "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
+      "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
+      "'./js/ui/lesson.js'", "'./js/ui/gloss.js'", "'./js/ui/explain.js'", "'./js/ui/buddy.js'",
+      "'./js/qa/tutor.js'", "'./js/tts.js'"]) {
       ok(swText.includes(p), 'sw.js ASSETS missing ' + p);
     }
   });
+
+  // ==================== F. PRACTICE UI (ported seams) ====================
+
+  test('lesson: steps split the explanation and end in the check-in gate', () => {
+    const { lessonSteps, stepIndex, canPractise, markCheckedIn } = mods.lesson;
+    const t = topicById('u02-divide');
+    const steps = lessonSteps(t);
+    eq(steps.at(-1).kind, 'checkin', 'the last step is always the check-in');
+    ok(steps.length >= 2, 'a real topic has at least one part plus the gate');
+    ok(!canPractise({ segIdx: 0 }), 'practice locked before the check-in');
+    const s = { segIdx: 2 };
+    markCheckedIn(s);
+    ok(canPractise(s), 'both check-in answers unlock via markCheckedIn');
+    eq(stepIndex({ segIdx: 999 }, t), steps.length - 1, 'a stray stored index clamps');
+    eq(stepIndex({}, t), 0, 'a session from before the feature starts at 0');
+  });
+
+  test('gloss: tokenizing wraps words, leaves numbers and fractions alone', () => {
+    const el = document.createElement('div');
+    el.innerHTML = 'Round 3,450 to the nearest <b>100</b>. '
+      + '<span class="frac"><b>3</b><i>4</i></span> of the pizza is left.';
+    const before = el.textContent;
+    mods.gloss.tokenizeInto(el);
+    eq(el.textContent, before, 'visible text unchanged');
+    const words = [...el.querySelectorAll('button.w')].map((b) => b.textContent);
+    ok(words.includes('Round') && words.includes('pizza'), 'words are tappable');
+    ok(!words.some((w) => /\d/.test(w)), 'no number is ever wrapped');
+    eq(el.querySelector('.frac').querySelectorAll('button').length, 0, 'fraction stack untouched');
+  });
+
+  test('focus: a catch-up session uses the short ramp, a map lesson the full one', () => {
+    const { buildFocusSession, CATCHUP_TOPIC_TIERS } = mods.focus;
+    const state = shellStorage.defaultState().maths.y6;
+    const short = buildFocusSession(state, 'u01-pv10m', 'new', '2026-09-01', makeRng(5), 'today');
+    eq(short.items.length, CATCHUP_TOPIC_TIERS.length, 'today-origin ramp is short');
+    eq(short.kind, 'focus-new');
+    const full = buildFocusSession(state, 'u01-pv10m', 'new', '2026-09-01', makeRng(5), 'map');
+    eq(full.items.length, NEW_TOPIC_TIERS.length, 'map-origin ramp is the full one');
+  });
+
+  test('diagnostic: >= 2 items per 6A strand and the checker accepts each answer', () => {
+    const items = mods.content.diagnosticItems(makeRng(seedFromString('diag')));
+    const perStrand = {};
+    for (const q of items) {
+      perStrand[q.strand] = (perStrand[q.strand] || 0) + 1;
+      ok(['place', 'fourops', 'fractions', 'position'].includes(q.strand), 'strand key exists in 6A');
+      ok(checkAnswer(q, correctInput(q)).ok, `diagnostic item rejects its own answer: ${q.prompt}`);
+    }
+    for (const s of ['place', 'fourops', 'fractions', 'position']) {
+      ok((perStrand[s] || 0) >= 2, `strand ${s} has fewer than 2 diagnostic items (prior would be noise)`);
+    }
+  });
+
+  test('tutor: prompts speak to Year 6 and the gloss prompt still bans solving', () => {
+    const sys = mods.tutor.buddySystemPrompt({ topicName: 'Fractions' });
+    ok(/Year 6/.test(sys), 'buddy prompt updated for Y6');
+    const g = mods.tutor.glossSystemPrompt();
+    ok(/Rechne NIEMALS/i.test(g) && /NUR dieses eine Wort/i.test(g), 'gloss prompt unchanged in spirit');
+    ok(!mods.tutor.translateSystemPrompt && !mods.tutor.wordHelpSystemPrompt, 'no full-text German paths');
+  });
+
+  report();
 
   test('journey: 6A covers all topics once, strands contiguous, prereqs honoured', () => {
     const { PREREQS } = mods.content;

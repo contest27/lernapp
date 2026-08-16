@@ -35,11 +35,11 @@ registerScreen('home', () => {
   const done = cur.completed.length;
   const total = topicOrder.length;
   const label = CURRICULUM_LABEL[st.maths.active] ?? st.maths.active;
-  wrap.append(h('div', { class: 'card hub-card' },
+  wrap.append(h('button', { class: 'card hub-card hub-go', onclick: () => go('today') },
     h('div', { class: 'hub-emoji' }, '🧮'),
     h('h2', {}, 'Maths'),
     h('p', { class: 'muted' }, `${label} · ${done}/${total} topics`),
-    h('p', { class: 'muted hub-soon' }, 'Book 6A is loaded — the practice screens arrive next.'),
+    h('p', { class: 'hub-cta' }, 'Open ▶'),
   ));
 
   // ---- english card
