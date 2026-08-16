@@ -1,7 +1,7 @@
 // Precaching service worker. Bump CACHE_VERSION on every deploy so clients
 // pick up new content; old caches are cleared on activate.
 
-const CACHE_VERSION = 'lernapp-v1';
+const CACHE_VERSION = 'lernapp-v2';
 
 // If Watch-style media ever moves in, it gets its own deploy-surviving cache —
 // see the Y5 trainer's MEDIA_CACHE pattern. Not needed yet.
@@ -27,6 +27,8 @@ const ASSETS = [
   './js/maths/content/glossary.js',
   './js/maths/content/index.js',
   './js/maths/content/y6a.js',
+  './js/maths/content/y6a-u3u6.js',
+  './js/maths/content/y6a-frac.js',
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',

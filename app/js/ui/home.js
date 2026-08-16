@@ -39,7 +39,7 @@ registerScreen('home', () => {
     h('div', { class: 'hub-emoji' }, '🧮'),
     h('h2', {}, 'Maths'),
     h('p', { class: 'muted' }, `${label} · ${done}/${total} topics`),
-    h('p', { class: 'muted hub-soon' }, 'The Year 6 journey is being built — first topics land soon.'),
+    h('p', { class: 'muted hub-soon' }, 'Book 6A is loaded — the practice screens arrive next.'),
   ));
 
   // ---- english card

@@ -49,6 +49,13 @@ async function run() {
   const { topics, topicOrder, topicById, journeyMeta } = mods.content;
   const shellStorage = mods.shellStorage;
 
+  let swText = '';
+  try {
+    swText = await (await fetch('../sw.js')).text();
+  } catch (e) {
+    results.push({ name: 'SW FETCH', ok: false, err: String(e) });
+  }
+
   // ==================== A. ENGINE (ported from powermath-trainer) ====================
 
   // ---------------- rng
@@ -162,7 +169,7 @@ async function run() {
     eq(plan.newTopic, 'u01-pv10m');
   });
 
-  test('scheduler: a completed, overdue topic comes back as review', () => {
+  test('scheduler: an overdue topic joins the daily plan as review', () => {
     const state = shellStorage.defaultState();
     const slice = state.maths.y6;
     slice.diagnosticDone = true;
@@ -170,10 +177,26 @@ async function run() {
     slice.mastery['u01-pv10m'] = newMastery(50);
     slice.mastery['u01-pv10m'].due = '2026-01-01';
     const plan = planSession(slice, topicOrder, '2026-06-01', makeRng(2), journeyMeta);
-    eq(plan.kind, 'review');
-    ok(plan.review.length > 0, 'review block should not be empty');
-    ok(plan.review.every((r) => r.topicId === 'u01-pv10m'), 'every review entry names the one topic');
+    eq(plan.kind, 'daily', 'with topics still unlearned the day stays a daily');
+    ok(plan.newTopic && plan.newTopic !== 'u01-pv10m', 'a new topic is offered');
+    ok(plan.review.length > 0 && plan.review.every((r) => r.topicId === 'u01-pv10m'),
+      'the overdue topic fills the review block');
     ok(plan.review.every((r) => [1, 2, 3].includes(r.tier)), 'every review entry carries a valid tier');
+  });
+
+  test('scheduler: with the whole book learned, an overdue topic makes a review day', () => {
+    const state = shellStorage.defaultState();
+    const slice = state.maths.y6;
+    slice.diagnosticDone = true;
+    for (const id of topicOrder) {
+      slice.completed.push(id);
+      slice.mastery[id] = newMastery(80);
+    }
+    slice.mastery['u02-divide'].due = '2026-01-01';
+    const plan = planSession(slice, topicOrder, '2026-06-01', makeRng(2), journeyMeta);
+    eq(plan.kind, 'review');
+    ok(plan.review.length > 0 && plan.review.every((r) => r.topicId === 'u02-divide'),
+      'the one due topic fills the review-only day');
   });
 
   // ==================== C. GENERATOR SWEEP (fresh) ====================
@@ -210,13 +233,32 @@ async function run() {
     }
   });
 
-  test('generators: same seed twice gives the same prompt (determinism)', () => {
+  test('generators: same seed twice gives the same prompt (tiers 1-2)', () => {
+    // Tier 3 is deliberately excluded: scenario() deals story builders from a
+    // shared per-key deck WITHOUT replacement, so a second call — even with an
+    // identical rng — continues the rotation. That statefulness is the whole
+    // point (no repeated story until the pool is exhausted).
     for (const t of topics) {
-      for (let tier = 1; tier <= 3; tier++) {
+      for (let tier = 1; tier <= 2; tier++) {
         const seed = seedFromString(`${t.id}|${tier}|determinism`);
         const a = t.gen(makeRng(seed), tier);
         const b = t.gen(makeRng(seed), tier);
         eq(a.prompt, b.prompt, `${t.id} t${tier}: same seed produced different prompts`);
+      }
+    }
+  });
+
+  test('generators: tier-3 stories rotate (no immediate repeat)', () => {
+    // The flip side of the exclusion above: consecutive tier-3 draws of the
+    // same topic must not tell the same story twice in a row.
+    for (const t of topics) {
+      const rng = makeRng(seedFromString(t.id + '|rotate'));
+      let prev = null;
+      for (let i = 0; i < 6; i++) {
+        const q = t.gen(rng, 3);
+        const shell = String(q.prompt).replace(/[\d,.:−-]+/g, '#');
+        ok(shell !== prev, `${t.id}: the same tier-3 story twice in a row`);
+        prev = shell;
       }
     }
   });
@@ -333,6 +375,64 @@ async function run() {
     ok(/Rest/.test(lookupGloss('remainder')), 'remainder');
     eq(lookupGloss('Fractions'), lookupGloss('fraction'), 'plural falls back to the entry');
     eq(lookupGloss('zzzqx'), null, 'an unknown word is null, not a guess');
+  });
+
+  test('gloss: the glossary covers the lesson text a child actually reads', () => {
+    // Guards new content: a topic written with unglossed vocabulary silently
+    // pushes the child onto the API — and offline, onto nothing. (Same rule as
+    // the Y5 trainer; the glossary came along verbatim and grows here.)
+    const { lookupGloss } = mods.glossary;
+    let total = 0;
+    let known = 0;
+    for (const t of topics) {
+      for (const seg of t.explanation?.segments ?? []) {
+        for (const w of seg.text.replace(/<[^>]*>/g, ' ').match(/[A-Za-z][A-Za-z'-]*/g) ?? []) {
+          total += 1;
+          if (lookupGloss(w)) known += 1;
+        }
+      }
+    }
+    const pct = Math.round((known / total) * 100);
+    ok(pct >= 90, `offline glossary covers only ${pct}% of explanation words (want >= 90%)`);
+  });
+
+  test('sw: precache names every content module and the version moves', () => {
+    ok(swText, 'sw.js did not load');
+    ok(swText.includes("'lernapp-v2'"), 'CACHE_VERSION was not bumped for the 6A content release');
+    for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
+      "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'"]) {
+      ok(swText.includes(p), 'sw.js ASSETS missing ' + p);
+    }
+  });
+
+  test('journey: 6A covers all topics once, strands contiguous, prereqs honoured', () => {
+    const { PREREQS } = mods.content;
+    ok(topicOrder.length >= 13, `expected the 13 6A topics, got ${topicOrder.length}`);
+    eq(new Set(topicOrder).size, topicOrder.length, 'no duplicate topic ids');
+    // Strand contiguity: once a strand's run ends, it must not reappear
+    // (map regions derive from consecutive runs).
+    const seen = new Set();
+    let last = null;
+    for (const id of topicOrder) {
+      const s = journeyMeta.strandOf(id);
+      ok(s, `topic ${id} has a strand`);
+      if (s !== last) {
+        ok(!seen.has(s), `strand ${s} appears in two separate runs`);
+        seen.add(s);
+        last = s;
+      }
+    }
+    // Every prereq edge points at an existing, earlier topic.
+    for (const [id, reqs] of Object.entries(PREREQS)) {
+      ok(topicById(id), `PREREQS names unknown topic ${id}`);
+      for (const r of reqs) {
+        ok(topicById(r), `prereq ${r} of ${id} does not exist`);
+        ok(topicOrder.indexOf(r) < topicOrder.indexOf(id), `prereq ${r} comes after ${id} in book order`);
+      }
+    }
+    // Units ascend through the book array — the source of strand contiguity.
+    const units = topicOrder.map((id) => topicById(id).unit);
+    for (let i = 1; i < units.length; i++) ok(units[i] >= units[i - 1], 'units out of order');
   });
 
   report();

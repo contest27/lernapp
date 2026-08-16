@@ -1,4 +1,7 @@
 // Synced from powermath-trainer @ 85699c4 (tooling/content-neutral).
+// Diverged here for Y6: extra entries (coordinates, brackets, HCF vocabulary,
+// Y6 story nouns) and the -ied rule. The Y5 app is frozen at v16, so there is
+// no live upstream to sync these back to.
 // English → German word glosses for the lesson text.
 //
 // The app teaches maths in English to a child whose English is still weak.
@@ -548,6 +551,76 @@ export const GLOSSARY = {
   build: 'bauen',
   rose: 'stieg (Vergangenheit von rise)',
 
+  // ---- Y6 additions: coordinates, brackets, factors and the Y6 lesson voice
+  bracket: 'die Klammer',
+  'x-axis': 'die x-Achse (waagerecht)',
+  'y-axis': 'die y-Achse (senkrecht)',
+  'x-coordinate': 'die x-Koordinate (wie weit nach rechts)',
+  'y-coordinate': 'die y-Koordinate (wie weit nach oben)',
+  quadrant: 'der Quadrant (ein Viertel des Gitters)',
+  origin: 'der Ursprung (0, 0)',
+  flip: 'umklappen, spiegeln',
+  reflect: 'spiegeln',
+  sign: 'das Vorzeichen (+ oder −); das Schild',
+  cross: 'kreuzen, überqueren; das Kreuz',
+  written: 'geschrieben, schriftlich',
+  form: 'die Form; bilden',
+  grow: 'wachsen',
+  near: 'nahe, in der Nähe',
+  also: 'auch',
+  carefully: 'sorgfältig, vorsichtig',
+  reverse: 'umgekehrt, rückwärts',
+  borrow: 'leihen (beim Abziehen: eintauschen)',
+  divisor: 'der Teiler (die Zahl, durch die geteilt wird)',
+  multiplier: 'der Multiplikator (die Zahl, mit der malgenommen wird)',
+  neighbour: 'der Nachbar',
+  hop: 'der Hüpfer, hüpfen',
+  run: 'laufen; die Reihe (a run of numbers)',
+  head: 'der Kopf ("in your head" = im Kopf)',
+  sense: 'der Sinn ("makes sense" = ergibt Sinn)',
+  list: 'die Liste, auflisten',
+  best: 'am besten, beste',
+  friend: 'der Freund, die Freundin',
+  jot: 'schnell notieren',
+  bit: 'das Stückchen, ein bisschen',
+  'left-over': 'übrig geblieben',
+  high: 'hoch',
+  'ten-thousand': 'zehntausend',
+  'hundred-thousand': 'hunderttausend',
+  went: 'ging (Vergangenheit von go)',
+  nowhere: 'nirgendwo',
+  yourself: 'du selbst, dich selbst',
+  gym: 'die Turnhalle, der Sport',
+  station: 'der Bahnhof, die Haltestelle',
+  corridor: 'der Flur, der Gang',
+  stairs: 'die Treppe',
+  notebook: 'das Heft, das Notizbuch',
+  fee: 'die Gebühr',
+  delivery: 'die Lieferung',
+  recipe: 'das Rezept',
+  route: 'die Route, der Weg',
+  ribbon: 'das Band',
+  concert: 'das Konzert',
+  coach: 'der Reisebus; der Trainer',
+  fortnight: 'vierzehn Tage (zwei Wochen)',
+  dawn: 'die Morgendämmerung, früh am Morgen',
+  overnight: 'über Nacht',
+  surface: 'die Oberfläche',
+  charity: 'die Spendenaktion, die Wohltätigkeit',
+  dozen: 'das Dutzend (12 Stück)',
+  badge: 'das Abzeichen',
+  lorry: 'der Lastwagen',
+  crate: 'die Kiste',
+  bruised: 'angestoßen (mit Druckstelle)',
+  museum: 'das Museum',
+  passenger: 'der Fahrgast',
+  theatre: 'das Theater',
+  bakery: 'die Bäckerei',
+  roll: 'das Brötchen; rollen',
+  farm: 'der Bauernhof',
+  egg: 'das Ei',
+  jar: 'das Glas (Gefäß)',
+
   // ---- things that turn up in word problems
   apple: 'der Apfel',
   pizza: 'die Pizza',
@@ -585,6 +658,7 @@ export const GLOSSARY = {
 // 'oth'). Order matters: the more specific ending is tried first.
 const RULES = [
   (w) => (w.endsWith('ies') ? w.slice(0, -3) + 'y' : null),   // carries → carry
+  (w) => (w.endsWith('ied') ? w.slice(0, -3) + 'y' : null),   // multiplied → multiply
   (w) => (w.endsWith('es') ? w.slice(0, -2) : null),          // boxes → box
   (w) => (w.endsWith('s') ? w.slice(0, -1) : null),           // angles → angle
   (w) => (w.endsWith('ing') ? w.slice(0, -3) : null),         // rounding → round
