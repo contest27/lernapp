@@ -1,0 +1,359 @@
+// Browser test runner. Open tests/tests.html via a local server; results render
+// on the page, log to the console, and land on window.__testResults.
+//
+// Ported from powermath-trainer/app/tests/main.js for the Lernapp hub. The
+// engine (rng/mastery/scheduler/check/progress) is a verbatim sync, so those
+// tests are ported near-unchanged. Everything under maths/content and
+// shell/storage is new to Lernapp, so those blocks are written fresh against
+// the layout documented in the hub's handoff notes.
+
+const results = [];
+function test(name, fn) {
+  try { fn(); results.push({ name, ok: true }); }
+  catch (e) { results.push({ name, ok: false, err: String(e && e.message || e) }); }
+}
+function ok(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
+function eq(a, b, msg) {
+  if (JSON.stringify(a) !== JSON.stringify(b)) {
+    throw new Error(`${msg || 'eq failed'}: ${JSON.stringify(a)} != ${JSON.stringify(b)}`);
+  }
+}
+
+async function run() {
+  let mods;
+  try {
+    mods = {
+      rng: await import('../js/engine/rng.js'),
+      engineStorage: await import('../js/engine/storage.js'),
+      mastery: await import('../js/engine/mastery.js'),
+      scheduler: await import('../js/engine/scheduler.js'),
+      check: await import('../js/engine/check.js'),
+      progress: await import('../js/engine/progress.js'),
+      content: await import('../js/maths/content/index.js'),
+      gen: await import('../js/maths/content/gen.js'),
+      glossary: await import('../js/maths/content/glossary.js'),
+      shellStorage: await import('../js/shell/storage.js'),
+    };
+  } catch (e) {
+    results.push({ name: 'MODULE IMPORTS', ok: false, err: String(e) });
+    report();
+    return;
+  }
+
+  const { makeRng, seedFromString, ri, shuffle } = mods.rng;
+  const { addDays, daysBetween } = mods.engineStorage;
+  const { newMastery, updateMastery, bandOf, scheduleAfterSession, diagnosticScore } = mods.mastery;
+  const { planSession, nextNewTopic, dueReviewTopics, pickReviewTopics, NEW_TOPIC_TIERS, pacing } = mods.scheduler;
+  const { checkAnswer, parseNumber, answerText, gcd } = mods.check;
+  const { finishSession } = mods.progress;
+  const { topics, topicOrder, topicById, journeyMeta } = mods.content;
+  const shellStorage = mods.shellStorage;
+
+  // ==================== A. ENGINE (ported from powermath-trainer) ====================
+
+  // ---------------- rng
+  test('rng: deterministic for equal seeds', () => {
+    const a = makeRng(42), b = makeRng(42);
+    for (let i = 0; i < 100; i++) eq(a(), b());
+  });
+  test('rng: ri stays in bounds', () => {
+    const r = makeRng(7);
+    for (let i = 0; i < 500; i++) {
+      const v = ri(r, 3, 9);
+      ok(v >= 3 && v <= 9 && Number.isInteger(v), 'ri out of bounds: ' + v);
+    }
+  });
+  test('rng: shuffle is a permutation', () => {
+    const r = makeRng(9);
+    const arr = [1, 2, 3, 4, 5];
+    const s = shuffle(r, arr);
+    eq(s.slice().sort(), arr, 'not a permutation');
+    eq(arr, [1, 2, 3, 4, 5], 'input mutated');
+  });
+
+  // ---------------- dates
+  test('dates: addDays crosses month ends', () => {
+    eq(addDays('2026-07-31', 1), '2026-08-01');
+    eq(addDays('2026-12-31', 1), '2027-01-01');
+    eq(daysBetween('2026-07-20', '2026-07-27'), 7);
+  });
+
+  // ---------------- mastery
+  test('mastery: EWMA stays within [5,100]', () => {
+    const m = newMastery(50);
+    for (let i = 0; i < 60; i++) updateMastery(m, 1, false);
+    ok(m.score >= 5, 'floor broken: ' + m.score);
+    for (let i = 0; i < 60; i++) updateMastery(m, 3, true);
+    ok(m.score <= 100, 'ceiling broken: ' + m.score);
+    ok(m.score > 80, 'many correct answers should lift the score, got ' + m.score);
+  });
+  test('mastery: misses hurt more on easy tiers', () => {
+    const a = newMastery(70), b = newMastery(70);
+    updateMastery(a, 1, false);
+    updateMastery(b, 3, false);
+    ok(a.score < b.score, `tier-1 miss (${a.score}) should drop below tier-3 miss (${b.score})`);
+  });
+  test('mastery: bands and review gaps', () => {
+    eq(bandOf(40), 'struggling'); eq(bandOf(70), 'developing'); eq(bandOf(90), 'secure');
+    const m = newMastery(40);
+    scheduleAfterSession(m, '2026-07-20');
+    eq(m.due, '2026-07-21', 'struggling reviews next day');
+    const m2 = newMastery(95);
+    scheduleAfterSession(m2, '2026-07-20');
+    eq(m2.due, '2026-07-27', 'secure reviews after a week');
+    ok(diagnosticScore(0) < diagnosticScore(1), 'diagnostic score monotone');
+  });
+  test('mastery: assisted help halves the correct move, never exceeds normal', () => {
+    eq(updateMastery(newMastery(60), 2, true).score, 67);              // normal: 60 + 0.17·40
+    eq(updateMastery(newMastery(60), 2, true, { assisted: true }).score, 63); // assisted: 60 + 0.085·40
+    ok(63 > 60, 'assisted never punishes');
+    ok(63 < 67, 'assisted never lifts as much as independent');
+  });
+  test('mastery: assisted flag is a no-op on a wrong answer', () => {
+    eq(updateMastery(newMastery(60), 2, false).score,
+       updateMastery(newMastery(60), 2, false, { assisted: true }).score);
+  });
+  test('mastery: EWMA stays in [5,100] under assisted correct', () => {
+    const m = newMastery(50);
+    let prev = m.score;
+    for (let i = 0; i < 60; i++) { updateMastery(m, 1, true, { assisted: true }); ok(m.score >= prev, 'non-decreasing'); prev = m.score; }
+    ok(m.score <= 100, 'ceiling holds');
+  });
+
+  // ---------------- check
+  test('check: parseNumber handles commas, spaces, minus', () => {
+    eq(parseNumber('34,500'), 34500);
+    eq(parseNumber('34 500'), 34500);
+    eq(parseNumber('-4'), -4);
+    eq(parseNumber('−4'), -4);
+    eq(parseNumber('2.75'), 2.75);
+    eq(parseNumber('abc'), null);
+    eq(parseNumber(''), null);
+  });
+  test('check: fraction equivalence and exactness', () => {
+    ok(checkAnswer({ kind: 'frac', answer: { n: 1, d: 2 } }, { n: '2', d: '4' }).ok, '2/4 should equal 1/2');
+    ok(!checkAnswer({ kind: 'frac', answer: { n: 1, d: 2 }, exact: true }, { n: '2', d: '4' }).ok, 'exact mode rejects 2/4');
+    ok(checkAnswer({ kind: 'frac', answer: { n: 5, d: 4 } }, { n: '5', d: '4' }).ok, 'improper accepted');
+    ok(!checkAnswer({ kind: 'frac', answer: { n: 1, d: 2 } }, { n: '1', d: '0' }).ok, 'zero denominator rejected');
+  });
+  test('check: order + mc + tf + tolerance', () => {
+    ok(checkAnswer({ kind: 'order', correctOrder: ['1', '2', '3'] }, ['1', '2', '3']).ok);
+    ok(!checkAnswer({ kind: 'order', correctOrder: ['1', '2', '3'] }, ['2', '1', '3']).ok);
+    ok(checkAnswer({ kind: 'mc', answerIndex: 2 }, 2).ok);
+    ok(checkAnswer({ kind: 'tf', answer: false }, false).ok);
+    ok(checkAnswer({ kind: 'num', answer: 5.9, tolerance: 0.001 }, '5.9').ok);
+    ok(checkAnswer({ kind: 'num', answer: 0.3, tolerance: 0.001 }, '0.3').ok);
+    eq(gcd(12, 18), 6);
+  });
+
+  // ==================== B. SCHEDULER SMOKE (fresh, small) ====================
+
+  test('scheduler: diagnostic comes first', () => {
+    const state = shellStorage.defaultState();
+    const plan = planSession(state.maths.y6, topicOrder, '2026-07-20', makeRng(1), journeyMeta);
+    eq(plan.kind, 'diagnostic');
+  });
+
+  test('scheduler: a fresh, diagnosed state offers the one Y6 topic as new', () => {
+    const state = shellStorage.defaultState();
+    state.maths.y6.diagnosticDone = true;
+    const plan = planSession(state.maths.y6, topicOrder, '2026-07-20', makeRng(1), journeyMeta);
+    eq(plan.kind, 'daily');
+    eq(plan.newTopic, 'u01-pv10m');
+  });
+
+  test('scheduler: a completed, overdue topic comes back as review', () => {
+    const state = shellStorage.defaultState();
+    const slice = state.maths.y6;
+    slice.diagnosticDone = true;
+    slice.completed.push('u01-pv10m');
+    slice.mastery['u01-pv10m'] = newMastery(50);
+    slice.mastery['u01-pv10m'].due = '2026-01-01';
+    const plan = planSession(slice, topicOrder, '2026-06-01', makeRng(2), journeyMeta);
+    eq(plan.kind, 'review');
+    ok(plan.review.length > 0, 'review block should not be empty');
+    ok(plan.review.every((r) => r.topicId === 'u01-pv10m'), 'every review entry names the one topic');
+    ok(plan.review.every((r) => [1, 2, 3].includes(r.tier)), 'every review entry carries a valid tier');
+  });
+
+  // ==================== C. GENERATOR SWEEP (fresh) ====================
+
+  // Correct-input builder per question kind: the checker must accept its own answer.
+  function correctInput(q) {
+    switch (q.kind) {
+      case 'num': return String(q.answer);
+      case 'mc': return q.answerIndex;
+      case 'tf': return q.answer;
+      case 'frac': return { n: String(q.answer.n), d: String(q.answer.d) };
+      case 'order': return q.correctOrder.slice();
+      default: return null;
+    }
+  }
+
+  test('generators: every topic sweeps clean across tiers and seeds', () => {
+    for (const t of topics) {
+      for (let tier = 1; tier <= 3; tier++) {
+        for (let seed = 0; seed < 40; seed++) {
+          const rng = makeRng(seedFromString(`${t.id}|${tier}|${seed}`));
+          const q = t.gen(rng, tier);
+          const where = `${t.id} t${tier} s${seed}`;
+          ok(q && typeof q === 'object', where + ': no question');
+          ok(['num', 'mc', 'tf', 'frac', 'order'].includes(q.kind), where + ': bad kind ' + q.kind);
+          ok(typeof q.prompt === 'string' && q.prompt.length > 4, where + ': empty prompt');
+          if (q.kind === 'num' || q.kind === 'mc') {
+            eq(q.tier, tier, where + ': tier mismatch');
+          }
+          const res = checkAnswer(q, correctInput(q));
+          ok(res.ok, where + ': checker rejects its own correct answer');
+        }
+      }
+    }
+  });
+
+  test('generators: same seed twice gives the same prompt (determinism)', () => {
+    for (const t of topics) {
+      for (let tier = 1; tier <= 3; tier++) {
+        const seed = seedFromString(`${t.id}|${tier}|determinism`);
+        const a = t.gen(makeRng(seed), tier);
+        const b = t.gen(makeRng(seed), tier);
+        eq(a.prompt, b.prompt, `${t.id} t${tier}: same seed produced different prompts`);
+      }
+    }
+  });
+
+  // ==================== D. HUB STORAGE (fresh — pins the shell's design) ====================
+
+  test('storage: defaultState shape', () => {
+    const st = shellStorage.defaultState();
+    eq(st.version, 1);
+    eq(st.shell.streak, { count: 0, lastDay: null });
+    eq(st.maths.active, 'y6');
+    eq(st.english, null);
+  });
+
+  test('storage: the curriculum streak IS the shell streak (same object)', () => {
+    const st = shellStorage.defaultState();
+    ok(st.maths.y6.streak === st.shell.streak, 'slice.streak must be the very same object as shell.streak');
+    finishSession(st.maths.y6, { kind: 'daily', topicId: 'x', total: 5, correct: 4 }, '2026-09-01');
+    eq(st.shell.streak.count, 1, 'the shell streak advanced');
+    eq(st.shell.streak.lastDay, '2026-09-01');
+    eq(st.maths.y6.activeSession, null, 'finishSession clears the active session');
+  });
+
+  test('storage: a JSON round trip restores the alias', () => {
+    const st = shellStorage.defaultState();
+    finishSession(st.maths.y6, { kind: 'daily', topicId: 'x', total: 1, correct: 1 }, '2026-09-01');
+    const restored = shellStorage.hydrate(JSON.parse(JSON.stringify(st)));
+    ok(restored.maths.y6.streak === restored.shell.streak, 'the alias must be re-pointed after a round trip');
+    eq(restored.shell.streak.count, 1, 'streak values survive the round trip');
+    eq(restored.shell.streak.lastDay, '2026-09-01');
+  });
+
+  test('storage: exportJSON strips the API key and parseImport round-trips', () => {
+    const st = shellStorage.defaultState();
+    st.shell.apiKey = 'sk-secret';
+    finishSession(st.maths.y6, { kind: 'daily', topicId: 'x', total: 1, correct: 1 }, '2026-09-01');
+    const text = shellStorage.exportJSON(st);
+    ok(!text.includes('sk-secret'), 'API key leaked into the backup');
+    const back = shellStorage.parseImport(text);
+    eq(back.shell.streak.count, 1, 'streak count survives');
+    eq(back.shell.apiKey, '', 'apiKey comes back empty');
+  });
+
+  test('storage: parseImport rejects foreign JSON', () => {
+    let threw = false;
+    try { shellStorage.parseImport('{}'); } catch { threw = true; }
+    ok(threw, 'should reject bare JSON');
+    let threwY5 = false;
+    const y5Export = JSON.stringify({ app: 'powermath-trainer', state: { version: 1 } });
+    try { shellStorage.parseImport(y5Export); } catch { threwY5 = true; }
+    ok(threwY5, 'should reject a powermath-trainer export');
+  });
+
+  function y5BackupText(name) {
+    return JSON.stringify({
+      app: 'powermath-trainer',
+      state: {
+        version: 1,
+        settings: { name, apiKey: 'sk-secret' },
+        mastery: { 'u08-x': { score: 70 } },
+        stars: { 'u08-x': 3 },
+        completed: ['u08-x'],
+        diagnosticDone: true,
+        history: [],
+        attempts: [],
+        qaLog: [],
+        streak: { count: 9, lastDay: '2026-08-16' },
+      },
+    });
+  }
+
+  test('storage: importY5Backup builds a y5 slice and does not let the Y5 streak overwrite the shell', () => {
+    const st = shellStorage.defaultState();
+    shellStorage.importY5Backup(st, y5BackupText('Kid'));
+    ok(st.maths.y5, 'y5 curriculum slice created');
+    eq(st.maths.y5.completed, ['u08-x']);
+    eq(st.maths.y5.settings.targetDate, null, 'the summer deadline does not come along');
+    ok(st.maths.y5.streak === st.shell.streak, 'the y5 slice aliases the shell streak, like every other slice');
+    eq(st.shell.streak.count, 0, 'the y5 backup streak (9) must NOT overwrite the shell streak');
+    eq(st.shell.name, 'Kid', 'an empty shell name gets filled from the backup');
+    ok(!JSON.stringify(st).includes('sk-secret'), 'the imported slice never carries the Y5 API key');
+  });
+
+  test('storage: importY5Backup keeps a name already set on this device', () => {
+    const st = shellStorage.defaultState();
+    st.shell.name = 'Theo';
+    shellStorage.importY5Backup(st, y5BackupText('Kid'));
+    eq(st.shell.name, 'Theo', 'a pre-set shell name must survive the import');
+  });
+
+  test('storage: capState caps attempts at 4000 and glossCache at 500, newest kept', () => {
+    const st = shellStorage.defaultState();
+    for (let i = 0; i < 4020; i++) st.maths.y6.attempts.push({ d: '2026-01-01', t: 'x', tier: 1, ok: 1 });
+    for (let i = 0; i < 520; i++) st.maths.y6.glossCache['word' + i] = 'g' + i;
+    shellStorage.capState(st);
+    eq(st.maths.y6.attempts.length, 4000, 'attempts capped');
+    eq(Object.keys(st.maths.y6.glossCache).length, 500, 'glossCache capped');
+    ok(st.maths.y6.glossCache.word519 && !st.maths.y6.glossCache.word0, 'the oldest lookups are the ones dropped');
+  });
+
+  test('storage: hydrate fills every curriculumState field for a legacy-shaped state', () => {
+    const s = shellStorage.hydrate({ version: 1, shell: { name: 'A' }, maths: { active: 'y6', y6: { completed: ['a'] } } });
+    eq(s.shell.name, 'A', 'stored shell fields win');
+    eq(s.maths.y6.completed, ['a'], 'stored completed list survives');
+    eq(typeof s.maths.y6.glossCache, 'object', 'glossCache filled in');
+    ok(Array.isArray(s.maths.y6.qaLog), 'qaLog filled in');
+    ok(s.maths.y6.streak === s.shell.streak, 'the alias is restored even for a state missing new fields');
+  });
+
+  // ==================== E. GLOSSARY SMOKE (ported) ====================
+
+  test('gloss: the offline glossary knows the maths vocabulary', () => {
+    const { lookupGloss } = mods.glossary;
+    ok(/Rest/.test(lookupGloss('remainder')), 'remainder');
+    eq(lookupGloss('Fractions'), lookupGloss('fraction'), 'plural falls back to the entry');
+    eq(lookupGloss('zzzqx'), null, 'an unknown word is null, not a guess');
+  });
+
+  report();
+}
+
+function report() {
+  const out = document.getElementById('out');
+  const passed = results.filter((r) => r.ok).length;
+  const failed = results.length - passed;
+  document.getElementById('summary').textContent =
+    `TESTS: ${passed} passed, ${failed} failed (${results.length} total)`;
+  document.getElementById('summary').className = failed ? 'fail' : 'pass';
+  for (const r of results) {
+    const div = document.createElement('div');
+    div.className = r.ok ? 'pass' : 'fail';
+    div.textContent = (r.ok ? '✓ ' : '✗ ') + r.name + (r.err ? ' — ' + r.err : '');
+    out.append(div);
+  }
+  console.log(`TESTS: ${passed} passed, ${failed} failed`);
+  results.filter((r) => !r.ok).forEach((r) => console.error('FAIL:', r.name, r.err));
+  window.__testResults = { passed, failed, results };
+}
+
+run();
