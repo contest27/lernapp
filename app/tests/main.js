@@ -37,6 +37,7 @@ async function run() {
       gloss: await import('../js/ui/gloss.js'),
       focus: await import('../js/ui/focus.js'),
       tutor: await import('../js/qa/tutor.js'),
+      mapScene: await import('../js/ui/map-scene.js'),
     };
   } catch (e) {
     results.push({ name: 'MODULE IMPORTS', ok: false, err: String(e) });
@@ -402,12 +403,13 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v3'"), 'CACHE_VERSION was not bumped for the practice-UI release');
+    ok(swText.includes("'lernapp-v4'"), 'CACHE_VERSION was not bumped for the map release');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
       "'./js/ui/lesson.js'", "'./js/ui/gloss.js'", "'./js/ui/explain.js'", "'./js/ui/buddy.js'",
-      "'./js/qa/tutor.js'", "'./js/tts.js'"]) {
+      "'./js/qa/tutor.js'", "'./js/tts.js'", "'./js/ui/map.js'", "'./js/ui/map-scene.js'",
+      "'./js/ui/svg.js'"]) {
       ok(swText.includes(p), 'sw.js ASSETS missing ' + p);
     }
   });
@@ -462,6 +464,80 @@ async function run() {
     for (const s of ['place', 'fourops', 'fractions', 'position']) {
       ok((perStrand[s] || 0) >= 2, `strand ${s} has fewer than 2 diagnostic items (prior would be noise)`);
     }
+  });
+
+  test('map: regions are the contiguous strand runs, one per island', () => {
+    const { deriveRegions } = mods.mapScene;
+    const regions = deriveRegions(topics);
+    eq(regions.reduce((n, r) => n + r.count, 0), topics.length, 'every topic sits in exactly one region');
+    // Contiguity again, but from the map's own point of view: a strand that
+    // reappears would produce two islands with the same signpost.
+    const strands = regions.map((r) => r.strand);
+    eq(new Set(strands).size, strands.length, 'a strand must not open a second island');
+    // Offsets line up: each region starts where the previous one ended.
+    let at = 0;
+    for (const r of regions) { eq(r.start, at, 'region start offset'); at += r.count; }
+  });
+
+  test('map: every strand has a tint and neighbouring islands differ', () => {
+    const { deriveRegions, TINTS } = mods.mapScene;
+    for (const key of Object.keys(mods.content.STRANDS)) {
+      ok(TINTS[key], `strand ${key} has no map tint — its island would fall back to grey`);
+    }
+    const regions = deriveRegions(topics);
+    for (let i = 1; i < regions.length; i++) {
+      ok(TINTS[regions[i].strand] !== TINTS[regions[i - 1].strand],
+        `islands ${regions[i - 1].strand} and ${regions[i].strand} share a colour and read as one`);
+    }
+  });
+
+  test('map: stations carry status, the ship sits on the scheduler pick', () => {
+    const { buildTreasureMap } = mods.mapScene;
+    const slice = shellStorage.defaultState().maths.y6;
+    slice.diagnosticDone = true;
+    slice.completed.push(topicOrder[0]);
+    slice.stars[topicOrder[0]] = 3;
+    slice.mastery[topicOrder[0]] = newMastery(90);
+    const next = nextNewTopic(slice, topicOrder, journeyMeta);
+    const { svg, currentEl, allDone, doneCount } = buildTreasureMap({
+      topics, strands: mods.content.STRANDS, state: slice, nextTopicId: next,
+    });
+    eq(doneCount, 1);
+    ok(!allDone, 'one done topic is not the whole journey');
+    eq(svg.querySelectorAll('.tmap-station').length, topics.length, 'one station per topic');
+    eq(currentEl.getAttribute('data-topic'), next, 'the ship marks the scheduler pick');
+    ok(svg.querySelector(`.tmap-station[data-topic="${topicOrder[0]}"]`).classList.contains('done'));
+    ok(svg.querySelector('.tmap-fog'), 'the future is fogged while topics remain');
+    // No Watch in Lernapp: the signposts must not have come along.
+    eq(svg.querySelectorAll('.tmap-watch').length, 0, 'no Watch signposts');
+  });
+
+  test('map: a finished journey opens the chest and lifts the fog', () => {
+    const { buildTreasureMap } = mods.mapScene;
+    const slice = shellStorage.defaultState().maths.y6;
+    slice.diagnosticDone = true;
+    for (const id of topicOrder) { slice.completed.push(id); slice.stars[id] = 3; }
+    const { svg, allDone, doneCount, currentEl } = buildTreasureMap({
+      topics, strands: mods.content.STRANDS, state: slice,
+      nextTopicId: nextNewTopic(slice, topicOrder, journeyMeta),
+    });
+    ok(allDone, 'nothing left to learn');
+    eq(doneCount, topics.length);
+    eq(currentEl, null, 'no ship once every island is visited');
+    ok(!svg.querySelector('.tmap-fog'), 'fog is gone');
+    ok(svg.querySelector('.tmap-chest').classList.contains('open'), 'the chest opens');
+  });
+
+  test('map: a station tap is gated before the diagnostic and on locked islands', () => {
+    const { stationAction } = mods.focus;
+    const slice = shellStorage.defaultState().maths.y6;
+    const t = topicById(topicOrder[0]);
+    eq(stationAction(slice, t, 'current').kind, 'toast', 'warm-up check comes first');
+    slice.diagnosticDone = true;
+    eq(stationAction(slice, t, 'locked').kind, 'toast', 'locked islands stay shut');
+    eq(stationAction(slice, t, 'current').mode, 'new', 'the current island starts a lesson');
+    eq(stationAction(slice, t, 'open').mode, 'new', 'a stepped-over island also starts a lesson');
+    eq(stationAction(slice, t, 'done').mode, 'review', 'a finished island opens as review');
   });
 
   test('tutor: prompts speak to Year 6 and the gloss prompt still bans solving', () => {

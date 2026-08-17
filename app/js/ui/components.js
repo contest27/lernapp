@@ -17,6 +17,7 @@ export function bottomNav(active, go) {
   return h('nav', { class: 'bottomnav' },
     item('home', '🏫', 'Home'),
     item('today', '🧮', 'Maths'),
+    item('map', '🗺️', 'My map'),
   );
 }
 

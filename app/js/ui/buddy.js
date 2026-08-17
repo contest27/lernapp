@@ -124,7 +124,7 @@ function openSheet() {
 export function updateBuddy() {
   const hasKey = !!store.state.shell.apiKey;
   const screen = currentScreen();
-  const allowed = ['home', 'today', 'session'].includes(screen);
+  const allowed = ['home', 'today', 'map', 'session'].includes(screen);
   if (!hasKey || !allowed) { setBuddyVisible(false); clearBuddyContext(); return; }
 
   if (screen === 'session') {

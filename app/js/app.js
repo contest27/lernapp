@@ -1,6 +1,7 @@
 import { mount, go, store, cur, onAfterRender } from './shell/core.js';
 import './ui/home.js';
 import './ui/today.js';
+import './ui/map.js';
 import './ui/session.js';
 import './ui/parent.js';
 import { mountBuddy, updateBuddy } from './ui/buddy.js';
