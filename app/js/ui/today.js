@@ -123,11 +123,11 @@ registerScreen('today', () => {
     card.append(h('button', {
       class: 'btn subtle wide notyet',
       onclick: () => {
-        if (!confirm(`Push "${t.shortTitle}" back until your class has covered it?`)) return;
+        if (!confirm(`Push "${t.shortTitle}" back? It comes round again next week.`)) return;
         deferTopic(slice, plan.newTopic, today);
         slice.activeSession = null; // the plan changes, so a built session is stale
         store.save();
-        toast('Pushed back — a different topic is next.');
+        toast('Pushed back — it returns next week. A different topic is next.');
         go('today');
       },
     }, '🙋 We have not had this in class yet'));

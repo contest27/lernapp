@@ -155,8 +155,9 @@ registerScreen('parent', () => {
   if (deferredIds.length) {
     pc.append(h('h3', { class: 'sub' }, 'Pushed back'),
       h('p', { class: 'muted' },
-        `He tapped "we have not had this in class yet" on these. They come back on their own after ${DEFER_DAYS} days, `
-        + 'or you can put one back in rotation now.'));
+        `He tapped "we have not had this in class yet" on these. They come back on their own after ${DEFER_DAYS} days `
+        + '— the teaching plan is roughly known, so a week is usually enough for the class to arrive. You can also '
+        + 'put one back now.'));
     for (const id of deferredIds) {
       const topic = topicById(id);
       pc.append(h('div', { class: 'vrow' },

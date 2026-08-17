@@ -69,10 +69,12 @@ export function dayPlan(slice, today, interval = DEFAULT_NEW_TOPIC_EVERY) {
 
 // ---------------------------------------------------------------- deferrals
 
-// How long a "we have not had this in class yet" stays in force. Long enough
-// for the class to catch up, short enough that nothing is lost for good — and
-// the parent corner can lift one early.
-export const DEFER_DAYS = 21;
+// How long a "we have not had this in class yet" stays in force. One week: the
+// rough teaching plan is known, so a topic the class has not reached yet is
+// usually days away, not weeks. Long enough to let the class arrive, short
+// enough that the year's material still gets covered. The parent corner can
+// lift one early.
+export const DEFER_DAYS = 7;
 
 // Topic ids still pushed back today. Expired entries are simply not returned;
 // they are cleaned out of the store on the next defer (see deferTopic).

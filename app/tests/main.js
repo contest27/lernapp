@@ -404,7 +404,7 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v6'"), 'CACHE_VERSION was not bumped for the school-year pacing release');
+    ok(swText.includes("'lernapp-v7'"), 'CACHE_VERSION was not bumped for the one-week deferral release');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
@@ -622,7 +622,8 @@ async function run() {
     const { deferTopic, activeDeferrals, undeferTopic, DEFER_DAYS } = mods.rhythm;
     const slice = shellStorage.defaultState().maths.y6;
     deferTopic(slice, 'u02-divide', '2026-09-01');
-    eq(activeDeferrals(slice, '2026-09-10'), ['u02-divide'], 'still held back');
+    eq(activeDeferrals(slice, '2026-09-05'), ['u02-divide'], 'still held back mid-week');
+    eq(DEFER_DAYS, 7, 'a deferred topic returns the following week');
     eq(activeDeferrals(slice, addDays('2026-09-01', DEFER_DAYS)), [], 'expires by itself');
     deferTopic(slice, 'u03-factors', '2026-09-02');
     undeferTopic(slice, 'u03-factors');

@@ -1,7 +1,7 @@
 // Precaching service worker. Bump CACHE_VERSION on every deploy so clients
 // pick up new content; old caches are cleared on activate.
 
-const CACHE_VERSION = 'lernapp-v6';
+const CACHE_VERSION = 'lernapp-v7';
 
 // If Watch-style media ever moves in, it gets its own deploy-surviving cache —
 // see the Y5 trainer's MEDIA_CACHE pattern. Not needed yet.
