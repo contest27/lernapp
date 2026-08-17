@@ -38,6 +38,7 @@ async function run() {
       focus: await import('../js/ui/focus.js'),
       tutor: await import('../js/qa/tutor.js'),
       mapScene: await import('../js/ui/map-scene.js'),
+      rhythm: await import('../js/shell/rhythm.js'),
     };
   } catch (e) {
     results.push({ name: 'MODULE IMPORTS', ok: false, err: String(e) });
@@ -403,13 +404,13 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v5'"), 'CACHE_VERSION was not bumped for the parent-corner release');
+    ok(swText.includes("'lernapp-v6'"), 'CACHE_VERSION was not bumped for the school-year pacing release');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
       "'./js/ui/lesson.js'", "'./js/ui/gloss.js'", "'./js/ui/explain.js'", "'./js/ui/buddy.js'",
       "'./js/qa/tutor.js'", "'./js/tts.js'", "'./js/ui/map.js'", "'./js/ui/map-scene.js'",
-      "'./js/ui/svg.js'"]) {
+      "'./js/ui/svg.js'", "'./js/shell/rhythm.js'"]) {
       ok(swText.includes(p), 'sw.js ASSETS missing ' + p);
     }
   });
@@ -576,6 +577,67 @@ async function run() {
     imported.shell.apiKey = st.shell.apiKey; // what parent.js does on restore
     eq(imported.shell.apiKey, 'sk-on-this-device');
     eq(imported.shell.name, 'Kid', 'the rest of the shell round-trips');
+  });
+
+  // ==================== G. RHYTHM (stretch across the school year) ====================
+
+  test('rhythm: maths and English alternate, stably', () => {
+    const { subjectOfDay } = mods.rhythm;
+    const days = ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04'];
+    const seq = days.map(subjectOfDay);
+    eq(seq[0], seq[2], 'same subject every other day');
+    ok(seq[0] !== seq[1], 'neighbouring days differ');
+    eq(subjectOfDay('2026-09-01'), subjectOfDay('2026-09-01'), 'stable for a given day');
+    ok(seq.includes('maths') && seq.includes('english'), 'both subjects occur');
+  });
+
+  test('rhythm: a new topic waits out the cadence', () => {
+    const { mayStartNewTopic, dayPlan } = mods.rhythm;
+    const slice = shellStorage.defaultState().maths.y6;
+    ok(mayStartNewTopic(slice, '2026-09-01', 6), 'nothing started yet — go ahead');
+    slice.history.push({ day: '2026-09-01', kind: 'daily', topicId: 'u01-pv10m', total: 11, correct: 9, minutes: 10 });
+    ok(!mayStartNewTopic(slice, '2026-09-03', 6), 'two days later is too soon');
+    ok(mayStartNewTopic(slice, '2026-09-07', 6), 'six days later is fine');
+    ok(mayStartNewTopic(slice, '2026-09-03', 0), 'a zero interval switches the throttle off');
+    // Review-only sessions must not reset the clock.
+    slice.history.push({ day: '2026-09-05', kind: 'review', topicId: null, total: 10, correct: 8, minutes: 7 });
+    eq(mods.rhythm.lastNewTopicDay(slice), '2026-09-01', 'a review day is not a new topic');
+    const plan = dayPlan(slice, '2026-09-03', 6);
+    ok(plan.daysToNext > 0, 'the card can say how long the wait is');
+  });
+
+  test('rhythm: planSession honours the throttle and the deferrals', () => {
+    const slice = shellStorage.defaultState().maths.y6;
+    slice.diagnosticDone = true;
+    const open = planSession(slice, topicOrder, '2026-09-01', makeRng(3), journeyMeta);
+    eq(open.kind, 'daily', 'by default a new topic is offered');
+    const held = planSession(slice, topicOrder, '2026-09-01', makeRng(3), journeyMeta, { allowNewTopic: false });
+    eq(held.kind, 'review', 'the throttle turns the day into review');
+    eq(held.newTopic, null);
+    const skipped = planSession(slice, topicOrder, '2026-09-01', makeRng(3), journeyMeta, { skip: [open.newTopic] });
+    ok(skipped.newTopic && skipped.newTopic !== open.newTopic, 'a deferred topic is passed over');
+  });
+
+  test('rhythm: a deferral expires on its own and can be lifted early', () => {
+    const { deferTopic, activeDeferrals, undeferTopic, DEFER_DAYS } = mods.rhythm;
+    const slice = shellStorage.defaultState().maths.y6;
+    deferTopic(slice, 'u02-divide', '2026-09-01');
+    eq(activeDeferrals(slice, '2026-09-10'), ['u02-divide'], 'still held back');
+    eq(activeDeferrals(slice, addDays('2026-09-01', DEFER_DAYS)), [], 'expires by itself');
+    deferTopic(slice, 'u03-factors', '2026-09-02');
+    undeferTopic(slice, 'u03-factors');
+    eq(activeDeferrals(slice, '2026-09-05'), ['u02-divide'], 'the parent can lift one early');
+  });
+
+  test('rhythm: the pacing default rides along in a new state and a backup', () => {
+    const st = shellStorage.defaultState();
+    eq(st.maths.y6.settings.newTopicEveryDays, 6, 'a school-year cadence by default');
+    eq(st.maths.y6.deferred, {}, 'a fresh state defers nothing');
+    // A state written before this release has neither field.
+    const old = shellStorage.hydrate({ version: 1, maths: { active: 'y6', y6: { completed: ['u01-pv10m'] } } });
+    eq(old.maths.y6.settings.newTopicEveryDays, 6, 'hydrate fills the new setting');
+    eq(old.maths.y6.deferred, {}, 'hydrate fills the deferral record');
+    eq(old.maths.y6.completed, ['u01-pv10m'], 'without losing what was stored');
   });
 
   test('tutor: prompts speak to Year 6 and the gloss prompt still bans solving', () => {

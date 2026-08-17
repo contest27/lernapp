@@ -17,6 +17,7 @@ import {
 import { askTutor } from '../qa/tutor.js';
 import { segmentEl, exampleEl, explanationSheet } from './explain.js';
 import { attachGloss } from './gloss.js';
+import { dayPlan, activeDeferrals } from '../shell/rhythm.js';
 import * as tts from '../tts.js';
 
 // ---------------------------------------------------------------- session build
@@ -24,7 +25,12 @@ import * as tts from '../tts.js';
 export function buildSession() {
   const today = dayKey();
   const rng = makeRng(seedFromString(today + '|' + cur().completed.length));
-  const plan = planSession(cur(), topicOrder, today, rng, journeyMeta);
+  const slice = cur();
+  const rhythm = dayPlan(slice, today, slice.settings.newTopicEveryDays);
+  const plan = planSession(slice, topicOrder, today, rng, journeyMeta, {
+    skip: activeDeferrals(slice, today),
+    allowNewTopic: rhythm.newTopic,
+  });
   const items = [];
   const seen = [];
 

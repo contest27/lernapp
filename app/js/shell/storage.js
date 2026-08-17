@@ -28,7 +28,9 @@ const CHAT_CAP = 100;
 // level, minus everything that moved into the shell.
 export function curriculumState() {
   return {
-    settings: { targetDate: null },  // pacing is per-curriculum (see engine/scheduler pacing())
+    // Per-curriculum pacing. newTopicEveryDays throttles NEW topics so the
+    // material lasts a school year (see shell/rhythm.js); 0 switches it off.
+    settings: { targetDate: null, newTopicEveryDays: 6 },
     mastery: {},       // topicId -> { score, attempts, correct, lastSeen, due, box }
     stars: {},         // topicId -> 1..3
     completed: [],     // topicIds in completion order
@@ -38,6 +40,7 @@ export function curriculumState() {
     qaLog: [],         // { day, topicId, q, a, source }
     chats: [],         // buddy conversations { day, view, topicId, assisted, messages }
     glossCache: {},    // normalised English word -> German gloss from the tutor
+    deferred: {},      // topicId -> day it was pushed back ("not taught yet")
     activeSession: null,
     focusSession: null,
     streak: null,      // ALIAS of shell.streak, restored by hydrate — never its own object
@@ -100,7 +103,7 @@ export function hydrate(s) {
   if (!names.length) { merged.maths.y6 = curriculumState(); names.push('y6'); }
   for (const name of names) {
     const cur = Object.assign(curriculumState(), merged.maths[name]);
-    cur.settings = Object.assign({ targetDate: null }, merged.maths[name]?.settings ?? {});
+    cur.settings = Object.assign({ targetDate: null, newTopicEveryDays: 6 }, merged.maths[name]?.settings ?? {});
     cur.streak = merged.shell.streak; // the alias — one streak for the whole app
     merged.maths[name] = cur;
   }

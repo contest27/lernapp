@@ -1,4 +1,11 @@
 // Synced from powermath-trainer @ 85699c4. Fixes belong upstream first.
+//
+// DIVERGED 2026-08-16 (the Y5 app is frozen, so there is no upstream to send it
+// to): planSession takes an options object. Year 5 was a sprint that only ever
+// accelerated; Year 6 must stretch across a school year and stay level with the
+// class, so the caller needs to say "no new topic today" (cadence) and "not
+// this one" (the child said it has not been taught yet). Both only affect topic
+// SELECTION — mastery, review and scoring are untouched.
 import { bandOf } from './mastery.js';
 import { daysBetween } from './storage.js';
 
@@ -103,15 +110,18 @@ export function pacing(state, topicOrder, today) {
 }
 
 // Plan for today's session. Pure: does not mutate state.
-export function planSession(state, topicOrder, today, rng, meta = null) {
+export function planSession(state, topicOrder, today, rng, meta = null, opts = {}) {
   if (!state.diagnosticDone) return { kind: 'diagnostic' };
 
-  const newTopic = nextNewTopic(state, topicOrder, meta);
+  // skip: topics to pass over when choosing (deferred by the child).
+  // allowNewTopic: false turns today into a review day (cadence throttle).
+  const { skip = [], allowNewTopic = true } = opts;
+  const newTopic = allowNewTopic ? nextNewTopic(state, topicOrder, meta, skip) : null;
   // On a catch-up day the plan names the second topic up front, so the home card
   // can promise "2 topics today" instead of hiding it behind a button that only
   // appears once the first session is already over.
   const extraTopic = newTopic && pacing(state, topicOrder, today)?.needTwo
-    ? nextNewTopic(state, topicOrder, meta, [newTopic])
+    ? nextNewTopic(state, topicOrder, meta, [...skip, newTopic])
     : null;
   const due = pickReviewTopics(dueReviewTopics(state, today), newTopic, meta);
   const reviewCount = newTopic ? REVIEW_ITEMS_DAILY : REVIEW_ITEMS_ONLY;

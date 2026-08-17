@@ -8,6 +8,7 @@ import { headerBar, bandDot, starRow, numberPad } from './components.js';
 import { topics, topicById } from '../maths/content/index.js';
 import { exportJSON, parseImport, importY5Backup, dayKey, wipe } from '../shell/storage.js';
 import { normaliseWord } from '../maths/content/glossary.js';
+import { subjectOfDay, lastNewTopicDay, activeDeferrals, undeferTopic, DEFER_DAYS } from '../shell/rhythm.js';
 import { testKey } from '../qa/tutor.js';
 import * as tts from '../tts.js';
 
@@ -125,6 +126,49 @@ registerScreen('parent', () => {
     if (words.length > 40) voc.append(h('p', { class: 'muted' }, `… and ${words.length - 40} more.`));
   }
   wrap.append(voc);
+
+  // ---- pace ----
+  const pc = section('Pace');
+  pc.append(h('p', { class: 'muted' },
+    'Year 6 has to last a school year and stay roughly level with what the class is teaching, so the app holds '
+    + 'new topics back. Maths and English alternate by day, and on a maths day a NEW topic only starts once the '
+    + 'gap below has passed — the days in between are review.'));
+  const every = h('input', {
+    type: 'number', class: 'text-in', min: '0', max: '30',
+    value: String(slice.settings.newTopicEveryDays ?? 6),
+  });
+  every.addEventListener('change', () => {
+    const v = Math.max(0, Math.min(30, Number(every.value) || 0));
+    slice.settings.newTopicEveryDays = v;
+    store.save();
+    toast(v ? `New topic every ${v} days` : 'Throttle off — a new topic every maths day');
+    go('parent');
+  });
+  const last = lastNewTopicDay(slice);
+  pc.append(h('label', { class: 'lab' }, 'Days between new topics (0 = no limit)'), every,
+    h('p', { class: 'muted' },
+      `Today is a${subjectOfDay(dayKey()) === 'maths' ? ' maths' : 'n English'} day. `
+      + (last ? `Last new topic: ${last}.` : 'No topic started yet.')));
+
+  // Topics the child pushed back with "we have not had this in class yet".
+  const deferredIds = activeDeferrals(slice, dayKey());
+  if (deferredIds.length) {
+    pc.append(h('h3', { class: 'sub' }, 'Pushed back'),
+      h('p', { class: 'muted' },
+        `He tapped "we have not had this in class yet" on these. They come back on their own after ${DEFER_DAYS} days, `
+        + 'or you can put one back in rotation now.'));
+    for (const id of deferredIds) {
+      const topic = topicById(id);
+      pc.append(h('div', { class: 'vrow' },
+        h('b', { class: 'grow' }, topic ? `${topic.emoji} ${topic.shortTitle}` : id),
+        h('span', { class: 'muted' }, slice.deferred[id]),
+        h('button', {
+          class: 'btn subtle',
+          onclick: () => { undeferTopic(slice, id); store.save(); toast('Back in rotation'); go('parent'); },
+        }, 'Back in rotation')));
+    }
+  }
+  wrap.append(pc);
 
   // ---- AI tutor ----
   const ai = section('AI tutor (optional)');
