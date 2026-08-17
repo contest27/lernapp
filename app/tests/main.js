@@ -568,14 +568,14 @@ async function run() {
     // Backups never contain a key, so a naive restore would silently wipe it.
     const st = shellStorage.defaultState();
     st.shell.apiKey = 'sk-on-this-device';
-    st.shell.name = 'Severin';
+    st.shell.name = 'Kid';
     const backup = shellStorage.exportJSON(st);
     ok(!backup.includes('sk-on-this-device'), 'the export strips the key');
     const imported = shellStorage.parseImport(backup);
     eq(imported.shell.apiKey, '', 'the imported state has no key');
     imported.shell.apiKey = st.shell.apiKey; // what parent.js does on restore
     eq(imported.shell.apiKey, 'sk-on-this-device');
-    eq(imported.shell.name, 'Severin', 'the rest of the shell round-trips');
+    eq(imported.shell.name, 'Kid', 'the rest of the shell round-trips');
   });
 
   test('tutor: prompts speak to Year 6 and the gloss prompt still bans solving', () => {

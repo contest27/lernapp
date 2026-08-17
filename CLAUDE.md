@@ -1,7 +1,7 @@
 # CLAUDE.md — Lernapp
 
 **Identity: Builder** (see user-scope CLAUDE.md). Side project: the learning
-hub for Sebastian's son Severin — successor to the PowerMath Trainer (Y5).
+hub for the author's son — successor to the PowerMath Trainer (Y5).
 iPad-first PWA, GitHub Pages. One shell, two modules:
 
 - **Maths** — curriculum-driven (Power Maths Year 6 now; Year 5 as a refresher
