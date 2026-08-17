@@ -24,9 +24,16 @@ python3 tools/serve.py 8125
 Then open `http://localhost:8125/` (app) and
 `http://localhost:8125/tests/tests.html` (tests — must show 0 failed).
 
+## Live
+
+<https://contest27.github.io/lernapp/> — installable as a PWA (iPad: Share →
+Add to Home Screen). An update lands on the **second** real launch of an
+installed app.
+
 ## Status
 
-**B0 scaffold** — shell, hub, parent corner, engine + tests green with a single
-placeholder topic. The Y6 content (15 units, ~140 lessons → ~30 topics) is the
-work in progress; see `quality_reports/reference/y6-yearly-overview.md` for the
-curriculum spine and `CLAUDE.md` for the phase plan.
+Book 6A is complete and practisable: 13 topics, diagnostic, guided lessons
+with tap-a-word German glosses, practice ramp, spaced review, treasure map,
+parent corner. Books 6B/6C and the English module are the work in progress;
+see `quality_reports/reference/y6-topic-spine.md` for the curriculum spine and
+`CLAUDE.md` for the phase plan.

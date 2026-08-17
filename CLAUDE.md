@@ -22,7 +22,7 @@ without an explicit decision logged in MEMORY.md.
 | Serve locally | `python3 tools/serve.py 8125` (no-cache; SW skipped on localhost) |
 | Tests | open `http://localhost:8125/tests/tests.html` — must show 0 failed |
 | Icons | `python3 tools/make_icons.py` |
-| Deploy | push to `main`; Pages workflow publishes `app/` (workflow: phase B6) |
+| Deploy | push to `main`; the Pages workflow publishes `app/` to <https://contest27.github.io/lernapp/> |
 
 ## Non-negotiables
 
@@ -69,6 +69,7 @@ exists.
 
 ## Phase plan (2026-08-16)
 
-B0 scaffold ✓ → B1 Y6 spine → B2 content 6A→6B→6C → B3 diagnostic →
-B4 Y5 import polish → B5 Wordforge port → B6 deploy + freeze the Y5 trainer.
+B0 scaffold ✓ → B1 Y6 spine ✓ → B2 content 6A ✓ (6B/6C open) → B3 diagnostic ✓
+→ practice UI ✓ → map ✓ → parent corner ✓ → B6 deploy ✓ →
+open: 6B/6C, B4 Y5 topic modules, B5 Wordforge port.
 Plan of record: `~/.claude/plans/inherited-crafting-lantern.md`.
