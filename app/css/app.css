@@ -419,3 +419,6 @@ h1, h2, h3 { margin: 0 0 8px; }
 .hub-go { display: block; width: 100%; }
 .hub-go:active { transform: scale(0.985); }
 .hub-cta { color: var(--brand-dark); font-weight: 800; margin-top: 6px; }
+.vrow { display: flex; gap: 10px; align-items: baseline; padding: 7px 2px; border-bottom: 1px solid var(--line); font-size: 0.95rem; }
+.vrow:last-child { border-bottom: 0; }
+.vcount { font-weight: 800; color: var(--brand-dark); font-size: 0.85rem; }

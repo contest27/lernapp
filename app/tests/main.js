@@ -403,7 +403,7 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v4'"), 'CACHE_VERSION was not bumped for the map release');
+    ok(swText.includes("'lernapp-v5'"), 'CACHE_VERSION was not bumped for the parent-corner release');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
@@ -538,6 +538,44 @@ async function run() {
     eq(stationAction(slice, t, 'current').mode, 'new', 'the current island starts a lesson');
     eq(stationAction(slice, t, 'open').mode, 'new', 'a stepped-over island also starts a lesson');
     eq(stationAction(slice, t, 'done').mode, 'review', 'a finished island opens as review');
+  });
+
+  test('parent: the vocabulary view aggregates taps by word, not by tap', () => {
+    // The parent corner groups gloss entries with normaliseWord, so "Fractions"
+    // and "fractions," land on one row. Pinned here because that view is the
+    // whole reason the taps are logged.
+    const { normaliseWord } = mods.glossary;
+    const log = [
+      { day: '2026-09-01', q: 'remainder', a: 'der Rest', source: 'gloss' },
+      { day: '2026-09-02', q: 'Remainder', a: 'der Rest', source: 'gloss' },
+      { day: '2026-09-02', q: 'remainder,', a: 'der Rest', source: 'gloss' },
+      { day: '2026-09-02', q: 'column', a: 'die Spalte', source: 'gloss' },
+      { day: '2026-09-02', q: 'Explanation reopened', a: 'x', source: 'reexplain' },
+      { day: '2026-09-02', q: 'why?', a: 'because', source: 'ai' },
+    ];
+    const vocab = new Map();
+    for (const e of log) {
+      if (e.source !== 'gloss') continue;
+      const key = normaliseWord(e.q) || String(e.q).toLowerCase();
+      const seen = vocab.get(key);
+      if (seen) seen.n += 1; else vocab.set(key, { n: 1 });
+    }
+    eq([...vocab.keys()].sort(), ['column', 'remainder'], 'only glosses, grouped by normalised word');
+    eq(vocab.get('remainder').n, 3, 'case and punctuation variants are one word');
+  });
+
+  test('parent: a restored backup keeps the key typed on THIS device', () => {
+    // Backups never contain a key, so a naive restore would silently wipe it.
+    const st = shellStorage.defaultState();
+    st.shell.apiKey = 'sk-on-this-device';
+    st.shell.name = 'Severin';
+    const backup = shellStorage.exportJSON(st);
+    ok(!backup.includes('sk-on-this-device'), 'the export strips the key');
+    const imported = shellStorage.parseImport(backup);
+    eq(imported.shell.apiKey, '', 'the imported state has no key');
+    imported.shell.apiKey = st.shell.apiKey; // what parent.js does on restore
+    eq(imported.shell.apiKey, 'sk-on-this-device');
+    eq(imported.shell.name, 'Severin', 'the rest of the shell round-trips');
   });
 
   test('tutor: prompts speak to Year 6 and the gloss prompt still bans solving', () => {
