@@ -2,9 +2,10 @@
 // Maths and English are siblings here — the child picks a door, the shell
 // stays out of the way.
 
-import { h, store, go, registerScreen } from '../shell/core.js';
+import { h, store, go, en, registerScreen } from '../shell/core.js';
 import { dayKey, activeCurriculum } from '../shell/storage.js';
 import { topicOrder } from '../maths/content/index.js';
+import { arcById } from '../english/content/story-index.js';
 
 const CURRICULUM_LABEL = { y6: 'Year 6', y5: 'Year 5 review' };
 
@@ -43,10 +44,15 @@ registerScreen('home', () => {
   ));
 
   // ---- english card
-  wrap.append(h('div', { class: 'card hub-card' },
+  const en_ = en();
+  const arc = arcById(en_.story.arcId);
+  const chDone = en_.story.completed.length;
+  const chTotal = arc.chapters.length;
+  wrap.append(h('button', { class: 'card hub-card hub-go', onclick: () => go('en-home') },
     h('div', { class: 'hub-emoji' }, '📚'),
     h('h2', {}, 'English'),
-    h('p', { class: 'muted hub-soon' }, 'Wordforge moves in here — reading, talking, and the forge.'),
+    h('p', { class: 'muted' }, `${arc.title} · ${chDone}/${chTotal} chapters`),
+    h('p', { class: 'hub-cta' }, 'Open ▶'),
   ));
 
   return wrap;

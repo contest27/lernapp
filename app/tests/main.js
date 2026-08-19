@@ -12,6 +12,10 @@ function test(name, fn) {
   try { fn(); results.push({ name, ok: true }); }
   catch (e) { results.push({ name, ok: false, err: String(e && e.message || e) }); }
 }
+async function atest(name, fn) {
+  try { await fn(); results.push({ name, ok: true }); }
+  catch (e) { results.push({ name, ok: false, err: String(e && e.message || e) }); }
+}
 function ok(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
 function eq(a, b, msg) {
   if (JSON.stringify(a) !== JSON.stringify(b)) {
@@ -39,6 +43,16 @@ async function run() {
       tutor: await import('../js/qa/tutor.js'),
       mapScene: await import('../js/ui/map-scene.js'),
       rhythm: await import('../js/shell/rhythm.js'),
+      // English (Wordforge port)
+      enVocab: await import('../js/english/engine/vocab.js'),
+      enLevel: await import('../js/english/engine/level.js'),
+      enStory: await import('../js/english/engine/story.js'),
+      enIndex: await import('../js/english/content/story-index.js'),
+      enClaude: await import('../js/english/qa/claude.js'),
+      enGenie: await import('../js/english/qa/genie.js'),
+      enTalk: await import('../js/english/qa/talk.js'),
+      enScenes: await import('../js/english/ui/world-scenes.js'),
+      enRead: await import('../js/english/ui/read.js'),
     };
   } catch (e) {
     results.push({ name: 'MODULE IMPORTS', ok: false, err: String(e) });
@@ -276,7 +290,11 @@ async function run() {
     eq(st.version, 1);
     eq(st.shell.streak, { count: 0, lastDay: null });
     eq(st.maths.active, 'y6');
-    eq(st.english, null);
+    // The English module used to be a bare null placeholder ("empty until
+    // phase B5" — see MEMORY.md); the Wordforge port replaced it with a real
+    // slice. Shape pinned properly in the "englishState is present..." test
+    // further down; this just confirms it is no longer null.
+    ok(st.english && typeof st.english === 'object', 'the English module should be a real state slice now');
   });
 
   test('storage: the curriculum streak IS the shell streak (same object)', () => {
@@ -404,15 +422,29 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v7'"), 'CACHE_VERSION was not bumped for the one-week deferral release');
+    ok(swText.includes("'lernapp-v8'"), 'CACHE_VERSION was not bumped for the Wordforge port release');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
       "'./js/ui/lesson.js'", "'./js/ui/gloss.js'", "'./js/ui/explain.js'", "'./js/ui/buddy.js'",
       "'./js/qa/tutor.js'", "'./js/tts.js'", "'./js/ui/map.js'", "'./js/ui/map-scene.js'",
-      "'./js/ui/svg.js'", "'./js/shell/rhythm.js'"]) {
+      "'./js/ui/svg.js'", "'./js/shell/rhythm.js'",
+      "'./js/english/engine/level.js'", "'./js/english/engine/story.js'", "'./js/english/engine/vocab.js'",
+      "'./js/english/content/story-index.js'",
+      "'./js/english/qa/claude.js'", "'./js/english/qa/genie.js'", "'./js/english/qa/gloss.js'", "'./js/english/qa/talk.js'",
+      "'./js/english/ui/home.js'", "'./js/english/ui/read.js'", "'./js/english/ui/talk.js'", "'./js/english/ui/create.js'",
+      "'./js/english/ui/parent-section.js'", "'./js/english/ui/speech.js'", "'./js/english/ui/audio.js'",
+      "'./js/english/ui/world-scenes.js'",
+      "'./data/story/signal/signal-01.json'", "'./data/story/signal/signal-12.json'"]) {
       ok(swText.includes(p), 'sw.js ASSETS missing ' + p);
     }
+  });
+
+  test('sw: English chapter MP3s are never precached, and the media cache survives a bump', () => {
+    const block = swText.match(/const ASSETS = \[([\s\S]*?)\];/);
+    ok(block, 'could not find the ASSETS array');
+    ok(!block[1].includes('.mp3'), 'an MP3 was precached — it must be runtime-cached instead');
+    ok(/k !== CACHE_VERSION && k !== MEDIA_CACHE/.test(swText), 'the media cache is not protected in activate');
   });
 
   // ==================== F. PRACTICE UI (ported seams) ====================
@@ -649,8 +681,6 @@ async function run() {
     ok(!mods.tutor.translateSystemPrompt && !mods.tutor.wordHelpSystemPrompt, 'no full-text German paths');
   });
 
-  report();
-
   test('journey: 6A covers all topics once, strands contiguous, prereqs honoured', () => {
     const { PREREQS } = mods.content;
     ok(topicOrder.length >= 13, `expected the 13 6A topics, got ${topicOrder.length}`);
@@ -679,6 +709,210 @@ async function run() {
     // Units ascend through the book array — the source of strand contiguity.
     const units = topicOrder.map((id) => topicById(id).unit);
     for (let i = 1; i < units.length; i++) ok(units[i] >= units[i - 1], 'units out of order');
+  });
+
+  // ==================== H. ENGLISH (Wordforge port) ====================
+
+  test('storage: englishState is present in defaultState, minus the shell-owned fields', () => {
+    const st = shellStorage.defaultState();
+    ok(st.english, 'english slice missing');
+    eq(st.english.tokens, 0);
+    eq(st.english.story, { arcId: 'signal', chapterIndex: 0, completed: [], abandoned: [] });
+    eq(st.english.level, { band: 4, history: [] });
+    eq(st.english.settings, { geminiKey: '', dailyImageCap: 3, speechEnabled: true });
+    ok(!('apiKey' in st.english.settings), 'the Anthropic key must live on shell, not english.settings');
+    ok(!('name' in st.english), 'the child name must live on shell, not english');
+  });
+
+  test('storage: hydrate fills English fields for a legacy state without losing what was stored', () => {
+    const old = shellStorage.hydrate({
+      version: 1,
+      shell: { name: 'A' },
+      maths: { active: 'y6', y6: { completed: ['a'] } },
+      english: { tokens: 5, story: { arcId: 'signal', completed: ['signal-01'] } },
+    });
+    eq(old.english.tokens, 5, 'stored English progress survives');
+    eq(old.english.story.completed, ['signal-01'], 'stored story progress survives');
+    eq(old.english.story.arcId, 'signal', 'stored field wins');
+    eq(old.english.level, { band: 4, history: [] }, 'a field never stored gets the default');
+    eq(old.english.settings.dailyImageCap, 3, 'a new nested settings key is filled in');
+  });
+
+  test('storage: hydrate never drops the whole English module for a pre-port state (english: null)', () => {
+    const legacy = shellStorage.hydrate({ version: 1, shell: {}, maths: { active: 'y6' }, english: null });
+    ok(legacy.english, 'a state saved before the English port must still gain the module');
+    eq(legacy.english.tokens, 0);
+  });
+
+  test('storage: capState caps the English ring buffers, newest kept', () => {
+    const st = shellStorage.defaultState();
+    for (let i = 0; i < 420; i++) st.english.sessions.push({ day: '2026-01-01', chapterId: 'x' + i });
+    for (let i = 0; i < 420; i++) st.english.promptLog.push({ day: '2026-01-01', prompt: 'x' + i });
+    for (let i = 0; i < 40; i++) st.english.images.push({ day: '2026-01-01', prompt: 'x' + i, dataUri: 'd' + i });
+    for (let i = 0; i < 520; i++) st.english.glossCache['word' + i] = { de: 'g' + i };
+    shellStorage.capState(st);
+    eq(st.english.sessions.length, 400, 'sessions capped');
+    eq(st.english.promptLog.length, 400, 'promptLog capped');
+    eq(st.english.images.length, 30, 'images capped');
+    eq(Object.keys(st.english.glossCache).length, 500, 'glossCache capped');
+    ok(st.english.glossCache.word519 && !st.english.glossCache.word0, 'the oldest lookups are the ones dropped');
+    ok(st.english.sessions[st.english.sessions.length - 1].chapterId === 'x419', 'the newest session survives');
+  });
+
+  test('en: vocab — a gloss tap moves the score DOWN, reading moves it up weakly', () => {
+    const a = mods.enVocab.newWord(50);
+    mods.enVocab.updateWord(a, 'gloss');
+    ok(a.score < 50, 'gloss did not lower the score');
+    const b = mods.enVocab.newWord(50);
+    mods.enVocab.updateWord(b, 'read');
+    ok(b.score > 50, 'reading did not raise the score');
+  });
+
+  test('en: vocab — normalise strips punctuation but keeps internal apostrophes', () => {
+    eq(mods.enVocab.normalise('Robot,'), 'robot');
+    eq(mods.enVocab.normalise("don't"), "don't");
+  });
+
+  test('en: level — two hard chapters lower the band, two easy ones need comprehension too', () => {
+    const entry = (over = {}) => mods.enLevel.makeEntry({
+      day: '2026-08-11', chapterId: 'c', band: 4, words: 200, seconds: 120,
+      glossTaps: 6, talkScore: 80, finished: true, ...over,
+    });
+    const hard = entry({ glossTaps: 20 });
+    eq(mods.enLevel.decide({ band: 4, history: [hard, hard] }).move, -1);
+    const easyButLost = entry({ glossTaps: 1, talkScore: 40 });
+    eq(mods.enLevel.decide({ band: 4, history: [easyButLost, easyButLost] }).move, 0,
+      'raised the band despite poor comprehension');
+  });
+
+  test('en: level — reading TIME never moves the band on its own', () => {
+    const entry = (over = {}) => mods.enLevel.makeEntry({
+      day: '2026-08-11', chapterId: 'c', band: 4, words: 200, seconds: 120,
+      glossTaps: 6, talkScore: 80, finished: true, ...over,
+    });
+    const quick = entry({ seconds: 40 }), slow = entry({ seconds: 900 });
+    eq(mods.enLevel.decide({ band: 4, history: [quick, quick] }).move,
+       mods.enLevel.decide({ band: 4, history: [slow, slow] }).move);
+  });
+
+  test('en: genie — validateScene rejects invented sprites and dangling relations', () => {
+    eq(mods.enGenie.validateScene({ ...mods.enGenie.emptyScene(), biome: 'volcano' }).length, 1);
+    const dangling = { ...mods.enGenie.emptyScene(), relations: [{ subject: 'robot', rel: 'behind', object: 'tree' }] };
+    ok(mods.enGenie.validateScene(dangling).length >= 2, 'dangling relation accepted');
+  });
+
+  test('en: genie — the model cannot award a power word he never typed', () => {
+    eq(mods.enGenie.powerWordsPresent('the rusty robot crept away', ['rusty', 'crept', 'hollow']), ['rusty', 'crept']);
+    eq(mods.enGenie.powerWordsPresent('nothing here', ['rusty']), []);
+  });
+
+  test('en: genie — every sprite kind in the vocabulary has a renderer', () => {
+    for (const k of [...mods.enGenie.ACTORS, ...mods.enGenie.PROPS]) {
+      ok(mods.enScenes.SPRITE_KINDS.includes(k), `no sprite drawn for "${k}"`);
+    }
+  });
+
+  test('en: claude — drainSSE handles an event split across reader chunks', () => {
+    const a = mods.enClaude.drainSSE('data: {"type":"x"}\n\ndata: {"ty');
+    eq(a.events.length, 1);
+    const b = mods.enClaude.drainSSE(a.rest + 'pe":"y"}\n\n');
+    eq(b.events[0].type, 'y');
+  });
+
+  test('en: claude — parseJSON survives fences and trailing prose', () => {
+    eq(mods.enClaude.parseJSON('```json\n{"a":2}\n```', ''), { a: 2 });
+    eq(mods.enClaude.parseJSON('"a":3} Hope that helps!'), { a: 3 });
+  });
+
+  test('en: scenes — "behind" puts the subject further back and smaller', () => {
+    const items = mods.enScenes.layout({
+      ...mods.enGenie.emptyScene(),
+      actors: [{ kind: 'fox', pos: 'centre', state: 'standing' }],
+      props: [{ kind: 'tree', pos: 'centre', size: 'medium' }],
+      relations: [{ subject: 'fox', rel: 'behind', object: 'tree' }],
+    });
+    const fox = items.find((i) => i.kind === 'fox');
+    const tree = items.find((i) => i.kind === 'tree');
+    ok(fox.z < tree.z && fox.scale < 1, 'behind did not push the fox back and shrink it');
+  });
+
+  test('en: scenes — renderScene builds an SVG on a detached DOM', () => {
+    const svg = mods.enScenes.renderScene({
+      biome: 'forest', time: 'night', weather: 'rain',
+      actors: [{ kind: 'robot', pos: 'centre', state: 'hiding' }],
+      props: [{ kind: 'tree', pos: 'left', size: 'large' }],
+      relations: [{ subject: 'robot', rel: 'behind', object: 'tree' }],
+    });
+    eq(svg.tagName, 'svg');
+    ok(svg.querySelectorAll('g').length > 0, 'no sprite groups drawn');
+  });
+
+  test('en: read — splitWords keeps whitespace and strips punctuation for lookup', () => {
+    const parts = mods.enRead.splitWords('The rusty robot, again.');
+    eq(parts.filter((p) => p.word).map((p) => p.word), ['the', 'rusty', 'robot', 'again']);
+    eq(parts.map((p) => p.space ?? p.raw).join(''), 'The rusty robot, again.');
+  });
+
+  test('en: story — validateChapter catches a power word missing from the prose', () => {
+    const ch = {
+      id: 'x', arc: 'a', title: 'T', level: 3,
+      power: ['one', 'two', 'three'],
+      glossary: { one: { de: 'eins', en: 'a number' }, two: { de: 'zwei', en: 'a number' }, three: { de: 'drei', en: 'a number' } },
+      steps: [{ id: 'p1', text: 'one two only.' }],
+      talk: [{ q: 'q', expect: ['a'] }],
+    };
+    const errs = mods.enStory.validateChapter(ch);
+    eq(errs.length, 1);
+    ok(errs[0].includes('"three" never appears'), errs[0]);
+  });
+
+  test('en: talk — talkScore null (unintelligible speech) never counts as zero', () => {
+    eq(mods.enTalk.talkScore([{ score: null }, { score: 80 }]), 80);
+    eq(mods.enTalk.talkScore([{ score: null }]), null);
+  });
+
+  // ---- shipped corpus sweep (the 12 signal-arc chapters) ----
+  const enPaths = mods.enIndex.allChapterPaths();
+  const enChapters = [];
+  await atest(`en corpus: all ${enPaths.length} registered chapters load`, async () => {
+    for (const p of enPaths) {
+      const res = await fetch('../' + p.replace(/^\.\//, ''));
+      ok(res.ok, `${p}: HTTP ${res.status}`);
+      enChapters.push(await res.json());
+    }
+  });
+
+  test('en corpus: every chapter passes validateChapter', () => {
+    const errs = enChapters.flatMap((c) => mods.enStory.validateChapter(c));
+    ok(errs.length === 0, errs.join(' | '));
+  });
+
+  test('en corpus: registry metadata matches the chapter files', () => {
+    const reg = mods.enIndex.ARCS.flatMap((a) => a.chapters.map((c) => ({ ...c, arc: a.id })));
+    for (const ch of enChapters) {
+      const r = reg.find((x) => x.id === ch.id);
+      ok(r, `${ch.id} is not in the registry`);
+      eq([ch.level, ch.title, ch.arc], [r.level, r.title, r.arc], `${ch.id} metadata drift`);
+    }
+  });
+
+  test('en corpus: every scene descriptor is renderable', () => {
+    for (const ch of enChapters) {
+      for (const st of ch.steps) {
+        const errs = mods.enGenie.validateScene(st.scene);
+        ok(errs.length === 0, `${ch.id}/${st.id}: ${errs.join(', ')}`);
+      }
+    }
+  });
+
+  test('en corpus: power words are never reused across chapters', () => {
+    const seen = new Map();
+    for (const ch of enChapters) {
+      for (const w of ch.power) {
+        ok(!seen.has(w), `"${w}" is a power word in both ${seen.get(w)} and ${ch.id}`);
+        seen.set(w, ch.id);
+      }
+    }
   });
 
   report();

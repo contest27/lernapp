@@ -6,7 +6,7 @@
 //              the ONE streak ("a learning day", whichever module it was)
 //   maths    — per-curriculum engine states (y6 now; y5 arrives via backup
 //              import as pure review material)
-//   english  — the Wordforge port (empty until phase B5)
+//   english  — the Wordforge port (engine/qa/ui under app/js/english/)
 //
 // Each curriculum slice IS an engine state: the synced engine files
 // (scheduler/progress/mastery) run on it unchanged. Two shared fields are
@@ -23,6 +23,13 @@ const QA_CAP = 200;
 const HISTORY_CAP = 400;
 const GLOSS_CAP = 500;
 const CHAT_CAP = 100;
+
+// English (Wordforge) ring-buffer caps — same pattern as the maths caps below,
+// sized to Wordforge's own original limits.
+const EN_SESSION_CAP = 400;
+const EN_PROMPT_CAP = 400;
+const EN_IMAGE_CAP = 30;
+const EN_GLOSS_CAP = 500;
 
 // One curriculum's engine state — the same shape the Y5 trainer stored at top
 // level, minus everything that moved into the shell.
@@ -47,6 +54,28 @@ export function curriculumState() {
   };
 }
 
+// The English module's state — Wordforge's own defaultState() minus the
+// fields that moved to the shell (name/apiKey/voiceURI/rate/streak/lastExport
+// — see the state-mapping table in the port handoff). `settings` here keeps
+// only the fields Wordforge never shared with maths: the optional Gemini key,
+// the daily image cap, and the speech kill-switch.
+export function englishState() {
+  return {
+    settings: { geminiKey: '', dailyImageCap: 3, speechEnabled: true },
+    diagnosticDone: false,
+    vocab: {},           // word -> { score, box, due, lastSeen, seen, glossed, used }
+    glossCache: {},       // word -> { de, en } — looked-up glosses, cached forever
+    level: { band: 4, history: [] },  // band 1..10, ~ORT level; 4 is the seeded default
+    story: { arcId: 'signal', chapterIndex: 0, completed: [], abandoned: [] },
+    world: { scenes: [] },            // his base — the only "progress" he sees
+    tokens: 0,
+    sessions: [],        // { day, chapterId, seconds, words, wpm, glossTaps, glossPer100, talkScore, finished }
+    promptLog: [],       // { day, chapterId, prompt, usedPower, literal, nudge, reject }
+    images: [],           // { day, prompt, dataUri }
+    activeChapter: null, // resume a chapter after a closed tab
+  };
+}
+
 export function defaultState() {
   const s = {
     version: 1,
@@ -62,7 +91,7 @@ export function defaultState() {
       active: 'y6',
       y6: curriculumState(),
     },
-    english: null,
+    english: englishState(),
   };
   return hydrate(s);
 }
@@ -108,6 +137,15 @@ export function hydrate(s) {
     merged.maths[name] = cur;
   }
   if (!names.includes(merged.maths.active)) merged.maths.active = names[0];
+
+  // English slice: one level deep, exactly like a curriculum slice — a state
+  // saved before this release has english: null and gains every field here
+  // instead of losing whatever came after (a bare Object.assign would let a
+  // stored `null` win wholesale, dropping the whole module).
+  const en = Object.assign(englishState(), merged.english ?? {});
+  en.settings = Object.assign(englishState().settings, merged.english?.settings ?? {});
+  merged.english = en;
+
   return merged;
 }
 
@@ -134,6 +172,18 @@ export function capState(state) {
     const words = Object.keys(c.glossCache ?? {});
     if (words.length > GLOSS_CAP) {
       for (const w of words.slice(0, words.length - GLOSS_CAP)) delete c.glossCache[w];
+    }
+  }
+
+  // English ring buffers — same pattern as the maths caps above.
+  const en = state.english;
+  if (en) {
+    if (en.sessions.length > EN_SESSION_CAP) en.sessions = en.sessions.slice(-EN_SESSION_CAP);
+    if (en.promptLog.length > EN_PROMPT_CAP) en.promptLog = en.promptLog.slice(-EN_PROMPT_CAP);
+    if (en.images.length > EN_IMAGE_CAP) en.images = en.images.slice(-EN_IMAGE_CAP);
+    const enWords = Object.keys(en.glossCache ?? {});
+    if (enWords.length > EN_GLOSS_CAP) {
+      for (const w of enWords.slice(0, enWords.length - EN_GLOSS_CAP)) delete en.glossCache[w];
     }
   }
   return state;

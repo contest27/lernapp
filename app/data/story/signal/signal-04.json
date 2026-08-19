@@ -1,0 +1,282 @@
+{
+ "id": "signal-04",
+ "arc": "signal",
+ "beat": 4,
+ "level": 4,
+ "title": "Cold Night",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "shelter",
+  "gather",
+  "frozen"
+ ],
+ "glossary": {
+  "shelter": {
+   "de": "der Unterstand, Schutz",
+   "en": "a place that keeps you safe from rain and wind"
+  },
+  "gather": {
+   "de": "sammeln",
+   "en": "to pick up many things and bring them together"
+  },
+  "frozen": {
+   "de": "gefroren",
+   "en": "so cold that it has turned hard, like ice"
+  },
+  "branches": {
+   "de": "Äste",
+   "en": "the arms of a tree"
+  },
+  "lean": {
+   "de": "lehnen",
+   "en": "to rest something against a wall or a tree"
+  },
+  "battery": {
+   "de": "die Batterie",
+   "en": "the part inside a machine that holds its power"
+  },
+  "dawn": {
+   "de": "die Morgendämmerung",
+   "en": "the time when the sun first comes up"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "The days got shorter. One evening Rig felt his battery going down faster than before. The cold was taking it.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "left",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-04/p01.mp3",
+   "durationSec": 8.42,
+   "srcHash": "659ad011067911fc308f1ff53526dc245d9bb740"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "He needed shelter. He had watched the animals do this. The fox slept under a rock. The birds slept close to the trunk of a tree.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "fox",
+      "pos": "right",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "fox",
+      "rel": "under",
+      "object": "rock"
+     }
+    ]
+   },
+   "audio": "signal-04/p02.mp3",
+   "durationSec": 10.01,
+   "srcHash": "5d8dff8a0b058a557eaf339670b7bf85b8b9c8e5"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "So Rig began to gather branches. With one good arm it took him a long time. He carried them, two at a time, to a wide old tree.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "running"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     },
+     {
+      "kind": "crate",
+      "pos": "left",
+      "size": "small"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-04/p03.mp3",
+   "durationSec": 9.96,
+   "srcHash": "6a030118d7bfa38aa52441c16661cffeb132c991"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "He leaned the branches against the trunk, one next to the other, until they made a small dark room. It was not beautiful. It would do.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "centre",
+      "size": "large"
+     },
+     {
+      "kind": "crate",
+      "pos": "centre",
+      "size": "medium"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "crate",
+      "rel": "next to",
+      "object": "tree"
+     }
+    ]
+   },
+   "audio": "signal-04/p04.mp3",
+   "durationSec": 9.62,
+   "srcHash": "372cb0ad0affe9f5f6838bba2d2978d6ec238497"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "That night the water on the ground turned to ice. In the morning the whole forest was white and frozen and very quiet.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "snow",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "hiding"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "under",
+      "object": "tree"
+     }
+    ]
+   },
+   "audio": "signal-04/p05.mp3",
+   "durationSec": 8.26,
+   "srcHash": "369b42592b19ad442ced6a8ed067ccdfea9ad530"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "Rig came out at dawn. His battery was low, but it was not empty. He had made a thing that kept him alive, and he had made it himself.",
+   "scene": {
+    "biome": "forest",
+    "time": "dawn",
+    "weather": "snow",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "left",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-04/p06.mp3",
+   "durationSec": 9.98,
+   "srcHash": "1f4c77378aa304cc64c46641cfaf7770e9633ee4"
+  }
+ ],
+ "talk": [
+  {
+   "q": "Why did Rig need a shelter?",
+   "expect": [
+    "cold",
+    "battery",
+    "power",
+    "night",
+    "ice",
+    "warm"
+   ]
+  },
+  {
+   "q": "Where did Rig get the idea for his shelter?",
+   "expect": [
+    "animals",
+    "fox",
+    "birds",
+    "watched",
+    "rock",
+    "tree"
+   ]
+  },
+  {
+   "q": "The last line says he made it himself. Why does that matter to Rig?",
+   "expect": [
+    "proud",
+    "alone",
+    "learn",
+    "can",
+    "himself",
+    "new"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,266 @@
+{
+ "id": "signal-10",
+ "arc": "signal",
+ "beat": 10,
+ "level": 6,
+ "title": "Hiding",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "hollow",
+  "breath",
+  "crouched"
+ ],
+ "glossary": {
+  "hollow": {
+   "de": "hohl",
+   "en": "empty inside, like a pipe"
+  },
+  "breath": {
+   "de": "der Atem",
+   "en": "the air that goes in and out of you"
+  },
+  "crouched": {
+   "de": "kauerte",
+   "en": "made yourself small and low to the ground"
+  },
+  "trunk": {
+   "de": "der Stamm",
+   "en": "the thick middle part of a tree"
+  },
+  "shrank": {
+   "de": "schrumpfte",
+   "en": "got smaller"
+  },
+  "beneath": {
+   "de": "unter",
+   "en": "under"
+  },
+  "trembling": {
+   "de": "zitternd",
+   "en": "shaking a little, from cold or fear"
+  },
+  "passed": {
+   "de": "vorbeigezogen",
+   "en": "went by and did not stop"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "Deep in the old part of the forest there was a tree so wide that four robots could have stood inside it. It had been dead a long time, and its trunk was hollow.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "fog",
+    "actors": [],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-10/p01.mp3",
+   "durationSec": 10.06,
+   "srcHash": "37f4a493b2cac85a4a3d1699687aad240290280b"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "Rig crouched down inside it and pulled the goose in against his chest. The fox came in after them, without being asked, and lay down across his feet.",
+   "scene": {
+    "biome": "cave",
+    "time": "night",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "hiding"
+     },
+     {
+      "kind": "goose",
+      "pos": "centre",
+      "state": "hiding"
+     },
+     {
+      "kind": "fox",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [],
+    "relations": []
+   },
+   "audio": "signal-10/p02.mp3",
+   "durationSec": 10.03,
+   "srcHash": "2e8fcf2c259667f0da9f245f813f3a5b283159ba"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "The hum came closer. It went over them once, and the sound filled the whole hollow trunk, and every small thing beneath the tree went quiet at the same moment.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "fog",
+    "actors": [
+     {
+      "kind": "drone",
+      "pos": "centre",
+      "state": "running"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "drone",
+      "rel": "on top of",
+      "object": "tree"
+     }
+    ]
+   },
+   "audio": "signal-10/p03.mp3",
+   "durationSec": 10.3,
+   "srcHash": "215786fdd1cd06ab51c953c2abb5699ae5b107ac"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "The goose was trembling. Rig could feel each small fast breath against his chest plate. He put one metal hand over the bird, very gently, the way he had learned with the egg, and the trembling slowed.",
+   "scene": {
+    "biome": "cave",
+    "time": "night",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "hiding"
+     },
+     {
+      "kind": "goose",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [],
+    "relations": []
+   },
+   "audio": "signal-10/p04.mp3",
+   "durationSec": 13.68,
+   "srcHash": "dd25541c2372fbbc341f7c95ccad48eeccc57c3a"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "The hum passed over a second time, further away. Then a third time, further still. Then it was gone, and there was only the wind.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "drone",
+      "pos": "right",
+      "state": "running"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "left",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-10/p05.mp3",
+   "durationSec": 9.89,
+   "srcHash": "d332136e61c87463ad5abfb5614b1a5800fa6021"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "They stayed in the hollow tree until morning anyway. Nobody moved. Rig thought about the fact that three creatures who could not speak to each other had all decided, without any argument, to be quiet together.",
+   "scene": {
+    "biome": "cave",
+    "time": "dawn",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     },
+     {
+      "kind": "goose",
+      "pos": "left",
+      "state": "sitting"
+     },
+     {
+      "kind": "fox",
+      "pos": "right",
+      "state": "sitting"
+     }
+    ],
+    "props": [],
+    "relations": []
+   },
+   "audio": "signal-10/p06.mp3",
+   "durationSec": 13.7,
+   "srcHash": "604440af3521b2dd0a4572e4128e6f0022bf57a7"
+  }
+ ],
+ "talk": [
+  {
+   "q": "Where did Rig hide, and why was it a good place?",
+   "expect": [
+    "hollow",
+    "tree",
+    "trunk",
+    "inside",
+    "big",
+    "hidden",
+    "dead"
+   ]
+  },
+  {
+   "q": "How did Rig calm the goose down?",
+   "expect": [
+    "hand",
+    "gentle",
+    "held",
+    "covered",
+    "soft",
+    "egg"
+   ]
+  },
+  {
+   "q": "The fox came in without being asked. What has changed between the fox and Rig since chapter three?",
+   "expect": [
+    "trust",
+    "friend",
+    "not afraid",
+    "together",
+    "safe",
+    "close"
+   ]
+  }
+ ]
+}

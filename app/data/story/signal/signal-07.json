@@ -1,0 +1,271 @@
+{
+ "id": "signal-07",
+ "arc": "signal",
+ "beat": 7,
+ "level": 5,
+ "title": "The Bridge",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "stream",
+  "plank",
+  "balance"
+ ],
+ "glossary": {
+  "stream": {
+   "de": "der Bach",
+   "en": "a small river"
+  },
+  "plank": {
+   "de": "die Planke, das Brett",
+   "en": "a long flat piece of wood"
+  },
+  "balance": {
+   "de": "das Gleichgewicht",
+   "en": "staying up without falling over"
+  },
+  "current": {
+   "de": "die Strömung",
+   "en": "water moving in one direction"
+  },
+  "slippery": {
+   "de": "rutschig",
+   "en": "hard to stand on without sliding"
+  },
+  "weight": {
+   "de": "das Gewicht",
+   "en": "how heavy a thing is"
+  },
+  "opposite": {
+   "de": "gegenüberliegend",
+   "en": "on the other side"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "West of the shelter the ground fell away, and at the bottom there was a stream. It was not wide. It was fast.",
+   "scene": {
+    "biome": "shore",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-07/p01.mp3",
+   "durationSec": 8.23,
+   "srcHash": "b29c604c648deabe352e8199cebab4a9a319c8a1"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "Rig looked at the current for a while. He was heavy, and water was already inside him. He did not think he would come out again on the opposite side.",
+   "scene": {
+    "biome": "shore",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "left",
+      "size": "medium"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-07/p02.mp3",
+   "durationSec": 10.2,
+   "srcHash": "94cb2a302d76a8d6d613384db62174e721a23877"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "So he walked along the bank instead, looking. After a long time he found a fallen tree, dead and dry, lying near the water.",
+   "scene": {
+    "biome": "shore",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "running"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-07/p03.mp3",
+   "durationSec": 9.1,
+   "srcHash": "3e2c2280c94c9dd90279512031f7981284dc3d7a"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "It took him two days to cut a plank from it with the tools, and another day to drag the plank to the narrowest place and push it across.",
+   "scene": {
+    "biome": "shore",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "bridge",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-07/p04.mp3",
+   "durationSec": 8.35,
+   "srcHash": "f93ffe4786173af34cfd3478b0906d16b3cd30ff"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "The wood was wet and slippery. Rig put one foot on it and felt his weight shift. He stopped, moved his arms out wide, and found his balance again.",
+   "scene": {
+    "biome": "shore",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "bridge",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "on top of",
+      "object": "bridge"
+     }
+    ]
+   },
+   "audio": "signal-07/p05.mp3",
+   "durationSec": 10.82,
+   "srcHash": "cecd8a875b2cb2943b299622b42e3e0b28dbb5a5"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "Step by slow step, he crossed. On the far bank he turned around and looked back at his bridge. Behind him, on the other side, the fox was already running across it.",
+   "scene": {
+    "biome": "shore",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "right",
+      "state": "standing"
+     },
+     {
+      "kind": "fox",
+      "pos": "centre",
+      "state": "running"
+     }
+    ],
+    "props": [
+     {
+      "kind": "bridge",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "fox",
+      "rel": "on top of",
+      "object": "bridge"
+     }
+    ]
+   },
+   "audio": "signal-07/p06.mp3",
+   "durationSec": 11.88,
+   "srcHash": "010d7dcf5c5e5635407156a38773002964c5419f"
+  }
+ ],
+ "talk": [
+  {
+   "q": "Why did Rig decide not to walk through the stream?",
+   "expect": [
+    "heavy",
+    "water",
+    "inside",
+    "sink",
+    "damage",
+    "fast"
+   ]
+  },
+  {
+   "q": "How long did the bridge take him altogether?",
+   "expect": [
+    "three",
+    "days",
+    "two",
+    "another",
+    "long"
+   ]
+  },
+  {
+   "q": "The fox runs across the bridge at the end. Why is that a nice way to finish the chapter?",
+   "expect": [
+    "easy",
+    "quick",
+    "follow",
+    "friend",
+    "made it for",
+    "not afraid",
+    "together"
+   ]
+  }
+ ]
+}

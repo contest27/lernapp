@@ -1,10 +1,15 @@
 // Precaching service worker. Bump CACHE_VERSION on every deploy so clients
 // pick up new content; old caches are cleared on activate.
 
-const CACHE_VERSION = 'lernapp-v7';
+const CACHE_VERSION = 'lernapp-v8';
 
-// If Watch-style media ever moves in, it gets its own deploy-surviving cache —
-// see the Y5 trainer's MEDIA_CACHE pattern. Not needed yet.
+// English (Wordforge) chapter narration MP3s live in their own long-lived
+// cache that SURVIVES CACHE_VERSION bumps: they are addressed by chapter
+// folder and never change under the same path. Do NOT add this to the
+// activate delete list, and do NOT precache MP3s — a chapter's audio is
+// several hundred KB and only the chapters he actually reaches are worth
+// storing. Ported from Wordforge's own sw.js MEDIA_CACHE pattern.
+const MEDIA_CACHE = 'lernapp-media-v1';
 
 const ASSETS = [
   './',
@@ -45,6 +50,34 @@ const ASSETS = [
   './js/maths/content/y6a-u3u6.js',
   './js/maths/content/y6a-frac.js',
   './js/maths/content/diagnostic.js',
+  './js/english/engine/level.js',
+  './js/english/engine/story.js',
+  './js/english/engine/vocab.js',
+  './js/english/content/story-index.js',
+  './js/english/qa/claude.js',
+  './js/english/qa/genie.js',
+  './js/english/qa/gloss.js',
+  './js/english/qa/talk.js',
+  './js/english/ui/home.js',
+  './js/english/ui/read.js',
+  './js/english/ui/talk.js',
+  './js/english/ui/create.js',
+  './js/english/ui/parent-section.js',
+  './js/english/ui/speech.js',
+  './js/english/ui/audio.js',
+  './js/english/ui/world-scenes.js',
+  './data/story/signal/signal-01.json',
+  './data/story/signal/signal-02.json',
+  './data/story/signal/signal-03.json',
+  './data/story/signal/signal-04.json',
+  './data/story/signal/signal-05.json',
+  './data/story/signal/signal-06.json',
+  './data/story/signal/signal-07.json',
+  './data/story/signal/signal-08.json',
+  './data/story/signal/signal-09.json',
+  './data/story/signal/signal-10.json',
+  './data/story/signal/signal-11.json',
+  './data/story/signal/signal-12.json',
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -58,7 +91,9 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(
+        keys.filter((k) => k !== CACHE_VERSION && k !== MEDIA_CACHE).map((k) => caches.delete(k)),
+      ))
       .then(() => self.clients.claim()),
   );
 });
@@ -94,9 +129,13 @@ self.addEventListener('fetch', (e) => {
         fetch(e.request).then((res) => {
           // Never cache redirected or partial (206/Range) responses — the Cache
           // API rejects 206, and a redirect target must not shadow an app path.
-          if (res.ok && res.status === 200 && !res.redirected) {
+          // MP3s (English chapter narration) go to the long-lived media cache
+          // so they survive a CACHE_VERSION bump instead of being precached.
+          const isRange = e.request.headers.has('range') || res.status === 206;
+          if (res.ok && res.status === 200 && !res.redirected && !isRange) {
             const copy = res.clone();
-            caches.open(CACHE_VERSION).then((c) => c.put(e.request, copy));
+            const target = url.pathname.endsWith('.mp3') ? MEDIA_CACHE : CACHE_VERSION;
+            caches.open(target).then((c) => c.put(e.request, copy));
           }
           return res;
         }),

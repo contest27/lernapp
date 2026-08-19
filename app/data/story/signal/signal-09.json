@@ -1,0 +1,273 @@
+{
+ "id": "signal-09",
+ "arc": "signal",
+ "beat": 9,
+ "level": 6,
+ "title": "The Drone",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "search",
+  "hum",
+  "hide"
+ ],
+ "glossary": {
+  "search": {
+   "de": "die Suche, suchen",
+   "en": "looking carefully for something"
+  },
+  "hum": {
+   "de": "das Summen",
+   "en": "a low sound that does not stop"
+  },
+  "hide": {
+   "de": "verstecken",
+   "en": "to go where nobody can see you"
+  },
+  "machine": {
+   "de": "die Maschine",
+   "en": "a thing built to do a job"
+  },
+  "pattern": {
+   "de": "das Muster",
+   "en": "the same shape happening again and again"
+  },
+  "sweep": {
+   "de": "überstreichen",
+   "en": "to move across an area looking at all of it"
+  },
+  "instinct": {
+   "de": "der Instinkt",
+   "en": "knowing something without learning it"
+  },
+  "belonged": {
+   "de": "gehörte",
+   "en": "was part of"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "The goose was nearly as tall as Rig's knee when the sound came. It was a hum, high up and far away, and it did not sound like anything alive.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "standing"
+     },
+     {
+      "kind": "goose",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-09/p01.mp3",
+   "durationSec": 9.58,
+   "srcHash": "d10b310d4b6d2d5fc4b2e2177e9ba990a123e5e4"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "Rig knew that sound. He did not remember where from, and that frightened him more than remembering would have.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [],
+    "relations": []
+   },
+   "audio": "signal-09/p02.mp3",
+   "durationSec": 7.25,
+   "srcHash": "4b72730d77772ddaafa9215b7ee28dfa48d34a6e"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "A small black machine came over the trees. It flew in straight lines, turned, and flew back along the next line, and then the next. It was flying a pattern.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "drone",
+      "pos": "centre",
+      "state": "running"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "left",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-09/p03.mp3",
+   "durationSec": 11.4,
+   "srcHash": "e5c13162bead1317ea40e841ae65f73ce7b00732"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "Rig understood what a pattern like that meant. The machine was not travelling anywhere. It was doing a search, and it would sweep this whole forest, line by line, until it had covered all of it.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "drone",
+      "pos": "right",
+      "state": "running"
+     },
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-09/p04.mp3",
+   "durationSec": 12.96,
+   "srcHash": "1bab4d124cd465bbe788a6cac740686d4cd3fc94"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "Something old in him said: they have come for you. Something else, newer, said: hide.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "fog",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "hiding"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "behind",
+      "object": "tree"
+     }
+    ]
+   },
+   "audio": "signal-09/p05.mp3",
+   "durationSec": 7.18,
+   "srcHash": "5f2da92c35e29ddcc60ecd5c4e81cf29e21d4221"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "He put out his fire with wet earth. He picked up the goose, who did not like it. And he ran, badly and slowly and with one arm, into the deep trees. The instinct that told him to run was not one he had been built with. He had grown it here.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "fog",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "running"
+     },
+     {
+      "kind": "goose",
+      "pos": "left",
+      "state": "hiding"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-09/p06.mp3",
+   "durationSec": 17.54,
+   "srcHash": "8fb40ee4181df59f20d0b51a0740b5a130bf45a9"
+  }
+ ],
+ "talk": [
+  {
+   "q": "How did Rig know the machine was searching and not just flying past?",
+   "expect": [
+    "pattern",
+    "lines",
+    "back",
+    "turned",
+    "again",
+    "sweep"
+   ]
+  },
+  {
+   "q": "Why was it more frightening that Rig could NOT remember where he knew the sound from?",
+   "expect": [
+    "not know",
+    "danger",
+    "forgot",
+    "past",
+    "who",
+    "unknown"
+   ]
+  },
+  {
+   "q": "The last line says the instinct to run was one he grew here. What does that mean about Rig?",
+   "expect": [
+    "changed",
+    "learned",
+    "alive",
+    "not just machine",
+    "new",
+    "different"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,244 @@
+{
+ "id": "signal-01",
+ "arc": "signal",
+ "beat": 1,
+ "level": 3,
+ "title": "The Long Fall",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "smoke",
+  "silent",
+  "wreck"
+ ],
+ "glossary": {
+  "smoke": {
+   "de": "Rauch",
+   "en": "grey air that comes from a fire"
+  },
+  "silent": {
+   "de": "still, lautlos",
+   "en": "with no sound at all"
+  },
+  "wreck": {
+   "de": "das Wrack",
+   "en": "what is left of a ship after it breaks"
+  },
+  "clouds": {
+   "de": "Wolken",
+   "en": "white shapes in the sky"
+  },
+  "blinked": {
+   "de": "blinkte",
+   "en": "went on and off, like a small light"
+  },
+  "hundred": {
+   "de": "hundert",
+   "en": "the number 100"
+  },
+  "alone": {
+   "de": "allein",
+   "en": "with nobody else"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "The ship came down out of the sky. It fell through the clouds, fast and loud. Then it hit the trees.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-01/p01.mp3",
+   "durationSec": 7.9,
+   "srcHash": "d0986c544b890f1e90bbd82408f04ca95ac9d5a6"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "Smoke rose from the broken shell. Nothing moved for a long time. No bird sang, and no animal came to look. The forest was silent.",
+   "scene": {
+    "biome": "wreck",
+    "time": "day",
+    "weather": "fog",
+    "actors": [],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "left",
+      "size": "medium"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-01/p02.mp3",
+   "durationSec": 10.8,
+   "srcHash": "30004c287acb05974423e4e90d92e524a9d35e09"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "Inside the wreck, a small light blinked. Then another one. A robot opened his eyes for the first time in a hundred years.",
+   "scene": {
+    "biome": "wreck",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [],
+    "relations": []
+   },
+   "audio": "signal-01/p03.mp3",
+   "durationSec": 9.07,
+   "srcHash": "923af47b5177e45a4b5e88d4a967031259b532cb"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "His name was Rig. He did not know where he was. He did not know why he was here.",
+   "scene": {
+    "biome": "wreck",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "crate",
+      "pos": "right",
+      "size": "small"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-01/p04.mp3",
+   "durationSec": 6.43,
+   "srcHash": "e7811e7e63ec9d452a6bc7fa4714bb6217436ac0"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "He pushed the door. It did not open. He pushed again, harder, and fell out onto the wet ground. Rain had been here before him.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "broken"
+     }
+    ],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "right",
+      "size": "small"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-01/p05.mp3",
+   "durationSec": 10.01,
+   "srcHash": "50664ed4cfabe28e875294085d8b56c19e88653d"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "Rig stood up slowly. All around him the trees went up and up. Far away a bird called once, and then stopped. He was alone.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "left",
+      "size": "large"
+     },
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "next to",
+      "object": "tree"
+     }
+    ]
+   },
+   "audio": "signal-01/p06.mp3",
+   "durationSec": 9.98,
+   "srcHash": "c2dd45f4fc516ffcb0e417b8bf665dcd512293f7"
+  }
+ ],
+ "talk": [
+  {
+   "q": "What happened to the ship at the start?",
+   "expect": [
+    "fell",
+    "crashed",
+    "trees",
+    "sky",
+    "broke"
+   ]
+  },
+  {
+   "q": "The forest was silent after the crash. Why is that strange?",
+   "expect": [
+    "loud",
+    "noise",
+    "animals",
+    "quiet",
+    "birds"
+   ]
+  },
+  {
+   "q": "How do you think Rig felt when he opened his eyes?",
+   "expect": [
+    "alone",
+    "lost",
+    "confused",
+    "scared",
+    "new"
+   ]
+  }
+ ]
+}

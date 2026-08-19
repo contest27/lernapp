@@ -11,6 +11,7 @@ import { normaliseWord } from '../maths/content/glossary.js';
 import { subjectOfDay, lastNewTopicDay, activeDeferrals, undeferTopic, DEFER_DAYS } from '../shell/rhythm.js';
 import { testKey } from '../qa/tutor.js';
 import * as tts from '../tts.js';
+import { englishSection } from '../english/ui/parent-section.js';
 
 // What kind of help each logged entry was. 'translate'/'wordhelp' were the Y5
 // full-text German paths, retired 2026-08-16; they stay in the map so imported
@@ -126,6 +127,9 @@ registerScreen('parent', () => {
     if (words.length > 40) voc.append(h('p', { class: 'muted' }, `… and ${words.length - 40} more.`));
   }
   wrap.append(voc);
+
+  // ---- English (Wordforge) ----
+  wrap.append(englishSection(h, section));
 
   // ---- pace ----
   const pc = section('Pace');
@@ -320,8 +324,10 @@ registerScreen('parent', () => {
       'A PowerMath Trainer (Year 5) backup can be imported here. The scores are stored straight away; the Year 5 '
       + 'topics themselves become practisable review material in a later update. The Year 5 streak and its summer '
       + 'deadline are deliberately not carried over.'),
-    y5 ? h('p', { class: 'muted' },
-      `✅ Imported: ${y5.completed.length} topics with their scores, waiting for the Year 5 lessons to arrive.`) : null,
+    // Spread, never `cond ? el : null` as an append argument: append is the raw
+    // DOM method and stringifies a null child into the literal text "null".
+    ...(y5 ? [h('p', { class: 'muted' },
+      `✅ Imported: ${y5.completed.length} topics with their scores, waiting for the Year 5 lessons to arrive.`)] : []),
     h('div', { class: 'row gap' },
       h('button', { class: 'btn subtle', onclick: () => y5In.click() }, '📦 Import Year 5 backup'), y5In));
   wrap.append(bk);

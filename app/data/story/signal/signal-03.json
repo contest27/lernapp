@@ -1,0 +1,277 @@
+{
+ "id": "signal-03",
+ "arc": "signal",
+ "beat": 3,
+ "level": 4,
+ "title": "The Watcher",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "crept",
+  "stared",
+  "bushes"
+ ],
+ "glossary": {
+  "crept": {
+   "de": "schlich",
+   "en": "walked very slowly and quietly"
+  },
+  "stared": {
+   "de": "starrte",
+   "en": "looked at something for a long time without moving"
+  },
+  "bushes": {
+   "de": "Büsche",
+   "en": "small plants, lower than trees, that you can hide behind"
+  },
+  "shadow": {
+   "de": "der Schatten",
+   "en": "the dark shape a thing makes when light is behind it"
+  },
+  "narrow": {
+   "de": "schmal",
+   "en": "not wide"
+  },
+  "escape": {
+   "de": "entkommen",
+   "en": "to get away from something"
+  },
+  "harm": {
+   "de": "Schaden zufügen",
+   "en": "to hurt someone"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "On the third day, Rig felt that someone was watching him. He turned around fast. There was nothing there.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-03/p01.mp3",
+   "durationSec": 7.7,
+   "srcHash": "4beeeae200c484a3d1ceb85ff74c87a66a9824f8"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "He walked on. Behind him, something moved in the bushes. When he stopped, it stopped too.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "standing"
+     },
+     {
+      "kind": "fox",
+      "pos": "right",
+      "state": "hiding"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "fox",
+      "rel": "behind",
+      "object": "tree"
+     }
+    ]
+   },
+   "audio": "signal-03/p02.mp3",
+   "durationSec": 7.54,
+   "srcHash": "3b8a0f723003ebfcd979357999be3c60e7c0fe1f"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "Rig sat down on a rock and waited. He waited a long time. He was very good at waiting.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "on top of",
+      "object": "rock"
+     }
+    ]
+   },
+   "audio": "signal-03/p03.mp3",
+   "durationSec": 7.03,
+   "srcHash": "57c628e099b166461495e39b4f6cc41ea55b1109"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "At last a small orange face came out of the bushes. It was a fox. She crept forward on narrow feet and stared at him.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     },
+     {
+      "kind": "fox",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "left",
+      "size": "medium"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-03/p04.mp3",
+   "durationSec": 9.17,
+   "srcHash": "7fc3c1f6b578a35abc0a5c1736e420b43dddd7c2"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "Rig did not move. He did not want her to escape. He also did not want to do her any harm.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     },
+     {
+      "kind": "fox",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [],
+    "relations": []
+   },
+   "audio": "signal-03/p05.mp3",
+   "durationSec": 7.51,
+   "srcHash": "d39c09e72da589fd6634f61460aa14cc9610fe85"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "For a long minute the fox and the robot stared at each other. Then she turned and ran, and her shadow went with her into the trees.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     },
+     {
+      "kind": "fox",
+      "pos": "right",
+      "state": "running"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-03/p06.mp3",
+   "durationSec": 8.88,
+   "srcHash": "b84ca4995e69d774551082854803e0771dba30c6"
+  }
+ ],
+ "talk": [
+  {
+   "q": "Who was watching Rig?",
+   "expect": [
+    "fox",
+    "animal",
+    "orange"
+   ]
+  },
+  {
+   "q": "Why did Rig sit down and wait instead of going to look?",
+   "expect": [
+    "scare",
+    "frighten",
+    "quiet",
+    "patient",
+    "come out",
+    "wait"
+   ]
+  },
+  {
+   "q": "The fox stared at Rig for a long time. What do you think she was thinking?",
+   "expect": [
+    "strange",
+    "new",
+    "danger",
+    "safe",
+    "what",
+    "never seen"
+   ]
+  }
+ ]
+}

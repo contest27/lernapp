@@ -1,0 +1,285 @@
+{
+ "id": "signal-08",
+ "arc": "signal",
+ "beat": 8,
+ "level": 5,
+ "title": "The Nest",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "nest",
+  "eggs",
+  "gentle"
+ ],
+ "glossary": {
+  "nest": {
+   "de": "das Nest",
+   "en": "the round home a bird builds for its eggs"
+  },
+  "eggs": {
+   "de": "Eier",
+   "en": "the round things birds come out of"
+  },
+  "gentle": {
+   "de": "sanft",
+   "en": "soft and careful, not rough"
+  },
+  "storm": {
+   "de": "der Sturm",
+   "en": "very strong wind and rain"
+  },
+  "cracked": {
+   "de": "zerbrochen, gesprungen",
+   "en": "broken with a line in it"
+  },
+  "hollow": {
+   "de": "hohl",
+   "en": "empty inside"
+  },
+  "beak": {
+   "de": "der Schnabel",
+   "en": "the hard mouth of a bird"
+  },
+  "belonged": {
+   "de": "gehörte",
+   "en": "was the property of"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "The storm came in the night and pulled at everything. In the morning the forest was full of fallen branches, and one of them held a nest.",
+   "scene": {
+    "biome": "forest",
+    "time": "dawn",
+    "weather": "rain",
+    "actors": [],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "left",
+      "size": "large"
+     },
+     {
+      "kind": "nest",
+      "pos": "centre",
+      "size": "small"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-08/p01.mp3",
+   "durationSec": 8.93,
+   "srcHash": "399eca77de30352ab7d63f075bf370ab6e950e63"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "Rig found it lying on the wet ground. Two of the eggs were cracked and hollow. One was not.",
+   "scene": {
+    "biome": "forest",
+    "time": "dawn",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "nest",
+      "pos": "centre",
+      "size": "medium"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-08/p02.mp3",
+   "durationSec": 7.25,
+   "srcHash": "cecaeba123271d7b8492228c0a7b193fa2605cba"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "He picked up the last egg. His hands were metal and his fingers did not know how to be gentle, so he learned it right there, in about four seconds.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "nest",
+      "pos": "left",
+      "size": "small"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-08/p03.mp3",
+   "durationSec": 9.79,
+   "srcHash": "df747304a3f9dc3cf7c0c105d738fc0e5c5d2abd"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "He carried the nest back to his fire and set it down where the warmth reached but did not burn. Then he sat with it, all day, doing nothing else.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "fire",
+      "pos": "centre",
+      "size": "medium"
+     },
+     {
+      "kind": "nest",
+      "pos": "centre",
+      "size": "small"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "nest",
+      "rel": "next to",
+      "object": "fire"
+     }
+    ]
+   },
+   "audio": "signal-08/p04.mp3",
+   "durationSec": 9.77,
+   "srcHash": "42cf45a171c94589825223565c256ba2b8073639"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "On the third day the egg moved. Then it opened, and a small wet grey thing came out and looked straight at him with one eye.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "goose",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "nest",
+      "pos": "centre",
+      "size": "medium"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "goose",
+      "rel": "inside",
+      "object": "nest"
+     }
+    ]
+   },
+   "audio": "signal-08/p05.mp3",
+   "durationSec": 8.09,
+   "srcHash": "81a1d0dd5ad3457d6a7e1cf99a08030974e9293f"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "It opened its beak and made a sound. Rig did not know what the sound meant. But he understood, in the way you understand a thing before you have words for it, that this small grey creature now belonged to him, and he to it.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     },
+     {
+      "kind": "goose",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "fire",
+      "pos": "right",
+      "size": "small"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "goose",
+      "rel": "next to",
+      "object": "robot"
+     }
+    ]
+   },
+   "audio": "signal-08/p06.mp3",
+   "durationSec": 14.26,
+   "srcHash": "a6a40429f4402832aed613e05b0558698c46cff9"
+  }
+ ],
+ "talk": [
+  {
+   "q": "What did Rig find after the storm?",
+   "expect": [
+    "nest",
+    "eggs",
+    "branch",
+    "three",
+    "fallen"
+   ]
+  },
+  {
+   "q": "Why was being gentle hard for Rig?",
+   "expect": [
+    "metal",
+    "hands",
+    "hard",
+    "strong",
+    "fingers",
+    "break"
+   ]
+  },
+  {
+   "q": "Do you think Rig should keep the bird, or let it go? Why?",
+   "expect": [
+    "keep",
+    "let",
+    "wild",
+    "alone",
+    "look after",
+    "safe",
+    "family"
+   ]
+  }
+ ]
+}

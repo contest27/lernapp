@@ -423,3 +423,134 @@ h1, h2, h3 { margin: 0 0 8px; }
 .vrow:last-child { border-bottom: 0; }
 .vcount { font-weight: 800; color: var(--brand-dark); font-size: 0.85rem; }
 .notyet { margin-top: 6px; font-size: 0.92rem; }
+
+/* ================================================================ English
+   Wordforge's own look, SCOPED to `.en` instead of merged.
+
+   Wordforge is a dark theme (--bg #0b1120), the maths side a light one
+   (#f0f9ff); merging the two :root blocks would wreck whichever loaded second.
+   Scoping keeps both intact — and the visual break is wanted, not tolerated:
+   English presents as a game, maths as school work (Wordforge's framing
+   decision). Custom properties inherit, so redefining them on `.en` re-themes
+   everything inside without touching anything outside. Body chrome (*, body,
+   #root, .toast, reduced-motion) is NOT re-declared — the hub already owns it. */
+.en {
+  --panel: #131c31;
+  --panel-2: #1c2740;
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --brand: #38bdf8;
+  --brand-dark: #0284c7;
+  --spark: #fbbf24;
+  --power: #a78bfa;
+  --danger: #f87171;
+  --line: #263449;
+  --radius: 16px;
+  background: radial-gradient(120% 80% at 50% 0%, #16233d 0%, #0b1120 60%);
+  color: var(--ink);
+  border-radius: 18px;
+  padding: 14px 16px 40px;
+}
+
+.en .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; min-height: 44px; }
+.en .topbar-title { font-weight: 600; font-size: 17px; flex: 1; }
+.en .brand { font-weight: 800; letter-spacing: 0.14em; font-size: 15px; color: var(--brand); flex: 1; }
+.en .sparks { color: var(--spark); font-weight: 700; font-variant-numeric: tabular-nums; }
+.en .icon { background: var(--panel); color: var(--ink); border: 0; border-radius: 12px; min-width: 44px; min-height: 44px; font-size: 22px; line-height: 1; }
+.en .icon.small { min-width: 36px; min-height: 36px; font-size: 16px; }
+.en .dots { display: flex; gap: 5px; }
+.en .dot { width: 7px; height: 7px; border-radius: 50%; background: #334155; }
+.en .dot.done { background: var(--brand-dark); }
+.en .dot.on { background: var(--brand); transform: scale(1.35); }
+
+.en .btn { font: inherit; font-weight: 650; border: 0; border-radius: 14px; background: var(--brand); color: #06121f; padding: 15px 20px; min-height: 52px; transition: transform 0.08s ease, filter 0.15s ease; }
+.en .btn:active { transform: scale(0.97); }
+.en .btn:disabled { background: #334155; color: var(--muted); }
+.en .btn.ghost { background: var(--panel-2); color: var(--ink); }
+.en .btn.ghost:disabled { background: #1a2338; color: #475569; }
+.en .btn.wide { flex: 1; }
+.en .btn.big { font-size: 19px; min-height: 60px; }
+.en .btn.small { min-height: 40px; padding: 8px 14px; font-size: 15px; }
+.en .btn.danger { color: var(--danger); }
+.en .btn.live { background: var(--danger); color: #1a0505; }
+.en .readbar { display: flex; gap: 10px; margin-top: 18px; }
+.en .hint { color: var(--muted); font-size: 14px; text-align: center; margin-top: 14px; }
+
+.en .hero { background: var(--panel); border-radius: var(--radius); padding: 22px; margin-bottom: 16px; }
+.en .hero-arc { color: var(--brand); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+.en .hero-title { font-size: 30px; font-weight: 800; margin: 6px 0 8px; line-height: 1.15; }
+.en .hero-blurb { color: var(--muted); margin-bottom: 20px; }
+.en .section { font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 26px 0 10px; }
+.en .empty { color: var(--muted); background: var(--panel); border-radius: var(--radius); padding: 20px; text-align: center; }
+.en .strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.en .strip-card { background: var(--panel); border-radius: 14px; overflow: hidden; }
+.en .strip-card svg { display: block; width: 100%; height: auto; }
+.en .strip-cap { padding: 9px 11px; font-size: 13px; color: var(--muted); }
+
+.en .scene-host { border-radius: var(--radius); overflow: hidden; background: var(--panel); }
+.en .scene { display: block; width: 100%; height: auto; }
+/* Entry animation: renderScene marks elements, mountScene adds .run. a-rise
+   only ever goes on the INNER group of a placed sprite — the outer group holds
+   the placement transform, which a CSS transform would override. */
+.en .scene .a-fade, .en .scene .a-rise { opacity: 0; }
+.en .scene .a-rise { transform: translateY(10px); }
+.en .scene.run .a-fade { opacity: 1; transition: opacity 0.45s ease; transition-delay: calc(var(--i, 0) * 0.07s); }
+.en .scene.run .a-rise { opacity: 1; transform: none; transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1); transition-delay: calc(var(--i, 0) * 0.07s); }
+
+.en .prose { font-size: 21px; line-height: 1.68; margin: 20px 2px; }
+/* Overrides the maths word-tap styling inside English: the same class name,
+   one more level of specificity. */
+.en .w { border-radius: 5px; padding: 1px; background: none; box-shadow: none; }
+.en .w:active { background: var(--brand-dark); box-shadow: none; }
+.en .w.power { color: var(--power); font-weight: 650; }
+.en .w.tapped { background: rgba(56, 189, 248, 0.16); }
+
+.en .bubble { background: var(--panel); border-radius: var(--radius); padding: 17px 19px; margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start; }
+.en .bubble-text { flex: 1; font-size: 19px; }
+.en .bubble.reply { background: var(--panel-2); }
+.en .nudge { margin-top: 12px; padding: 11px 13px; border-radius: 11px; background: rgba(167, 139, 250, 0.13); color: #ddd6fe; font-size: 15px; }
+.en .answer { font: inherit; font-size: 18px; width: 100%; padding: 14px; border-radius: 14px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); resize: vertical; }
+.en .answer.big { font-size: 19px; }
+.en .answer:focus { outline: 2px solid var(--brand); border-color: transparent; }
+
+.en .forge-intro { color: var(--muted); margin-bottom: 16px; }
+.en .runes { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 14px; }
+.en .rune { border: 1.5px dashed #3b4a66; color: var(--muted); border-radius: 999px; padding: 7px 15px; font-size: 15px; font-weight: 650; }
+.en .rune.lit { border-style: solid; border-color: var(--power); color: #ddd6fe; background: rgba(167, 139, 250, 0.14); }
+.en .spark-line { text-align: center; color: var(--spark); font-style: italic; margin: 14px 0 4px; }
+.en .spinner { width: 22px; height: 22px; border-radius: 50%; margin: 12px auto; border: 3px solid #334155; border-top-color: #38bdf8; animation: en-spin 0.8s linear infinite; }
+@keyframes en-spin { to { transform: rotate(360deg); } }
+
+/* The gloss sheet is appended to document.body, OUTSIDE the .en screen, so it
+   carries the dark palette literally rather than by inheritance. */
+.sheet { position: fixed; inset: 0; background: rgba(2, 6, 16, 0.72); display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity 0.2s ease; z-index: 60; }
+.sheet.show { opacity: 1; }
+.sheet .sheet-card { background: #131c31; color: #e2e8f0; border-radius: 20px 20px 0 0; padding: 22px; width: 100%; max-width: 560px; transform: translateY(14px); transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.sheet.show .sheet-card { transform: none; }
+.sheet .gloss-word { font-size: 27px; font-weight: 800; color: #38bdf8; }
+.sheet .gloss-de { font-size: 21px; margin-top: 10px; }
+.sheet .gloss-en { color: #94a3b8; margin-top: 5px; }
+.sheet .gloss-body { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.sheet .gloss-body .btn { margin-top: 10px; font: inherit; font-weight: 650; border: 0; border-radius: 14px; background: #38bdf8; color: #06121f; padding: 15px 20px; min-height: 52px; }
+.sheet .spinner { width: 22px; height: 22px; border-radius: 50%; margin: 12px auto; border: 3px solid #334155; border-top-color: #38bdf8; animation: en-spin 0.8s linear infinite; }
+
+/* Parent-corner English section: it lives on the LIGHT parent screen, so it
+   keeps the hub palette rather than Wordforge's dark one. */
+.psec .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 10px; }
+.psec .stat { background: var(--bg); border-radius: 13px; padding: 13px; text-align: center; }
+.psec .stat-v { font-size: 25px; font-weight: 800; color: var(--brand-dark); font-variant-numeric: tabular-nums; }
+.psec .stat-l { font-size: 13px; color: var(--muted); }
+.psec .stat-h { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.psec .note { color: var(--muted); font-size: 14px; margin: 10px 0; }
+.psec .field { display: block; margin-bottom: 12px; }
+.psec .field span { display: block; font-size: 14px; color: var(--muted); margin-bottom: 5px; }
+.psec .field input[type=text], .psec .field input[type=password] { font: inherit; width: 100%; padding: 12px; border-radius: 11px; border: 2px solid var(--line); }
+.psec .field.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.psec .field.row span { margin: 0; }
+.psec .field.row input[type=checkbox] { width: 26px; height: 26px; }
+.psec .log { display: flex; flex-direction: column; gap: 8px; }
+.psec .log-row { background: var(--bg); border-radius: 11px; padding: 11px 13px; }
+.psec .log-row.bad { border-left: 3px solid var(--bad); }
+.psec .log-day { font-size: 12px; color: var(--muted); }
+.psec .log-prompt { font-size: 16px; margin: 3px 0; }
+.psec .log-meta { font-size: 13px; color: var(--muted); }

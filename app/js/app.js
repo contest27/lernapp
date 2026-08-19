@@ -5,6 +5,12 @@ import './ui/map.js';
 import './ui/session.js';
 import './ui/parent.js';
 import { mountBuddy, updateBuddy } from './ui/buddy.js';
+// English module (Wordforge port) — self-registering screens, same pattern
+// as the maths ui/*.js imports above.
+import './english/ui/home.js';
+import './english/ui/read.js';
+import './english/ui/talk.js';
+import './english/ui/create.js';
 
 mount(document.getElementById('root'));
 

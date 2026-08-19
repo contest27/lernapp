@@ -1,0 +1,291 @@
+{
+ "id": "signal-11",
+ "arc": "signal",
+ "beat": 11,
+ "level": 6,
+ "title": "The Antenna",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "tower",
+  "signal",
+  "climb"
+ ],
+ "glossary": {
+  "tower": {
+   "de": "der Turm",
+   "en": "something tall and thin that you build upwards"
+  },
+  "signal": {
+   "de": "das Signal",
+   "en": "a message sent through the air"
+  },
+  "climb": {
+   "de": "klettern",
+   "en": "to go up something using your hands and feet"
+  },
+  "ridge": {
+   "de": "der Bergrücken",
+   "en": "the long high top of a hill"
+  },
+  "reach": {
+   "de": "die Reichweite",
+   "en": "how far something can get to"
+  },
+  "steady": {
+   "de": "stabil",
+   "en": "not moving or falling over"
+  },
+  "faint": {
+   "de": "schwach",
+   "en": "very weak, hard to notice"
+  },
+  "answer": {
+   "de": "die Antwort",
+   "en": "what comes back when you ask something"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "Rig had known since the wreck that there was a radio in it, and that the radio still worked, and that it had no reach at all down among the trees.",
+   "scene": {
+    "biome": "wreck",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "crate",
+      "pos": "right",
+      "size": "medium"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-11/p01.mp3",
+   "durationSec": 8.54,
+   "srcHash": "82d3d2ca6a6e5af24dbb9f9a290b978b0741c33d"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "He had not touched it for a whole winter. Now, with a machine sweeping the forest in straight lines, he wanted to know who was looking, and why.",
+   "scene": {
+    "biome": "wreck",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     },
+     {
+      "kind": "goose",
+      "pos": "right",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "crate",
+      "pos": "centre",
+      "size": "small"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-11/p02.mp3",
+   "durationSec": 9.72,
+   "srcHash": "107668cde86abf72310d8451b0a8492d735062e9"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "So he carried the radio up to the ridge, where the trees ran out and the sky started, and there he began to build a tower.",
+   "scene": {
+    "biome": "clearing",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "running"
+     }
+    ],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-11/p03.mp3",
+   "durationSec": 7.68,
+   "srcHash": "20005ed46dbc801332f259a7761307169d9d6076"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "It was made of dead branches and wire and one long piece of pipe, and it took eleven days. Twice it fell over. The third time he tied the bottom to three rocks, and it stood steady.",
+   "scene": {
+    "biome": "clearing",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "antenna",
+      "pos": "centre",
+      "size": "large"
+     },
+     {
+      "kind": "rock",
+      "pos": "centre",
+      "size": "small"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "rock",
+      "rel": "under",
+      "object": "antenna"
+     }
+    ]
+   },
+   "audio": "signal-11/p04.mp3",
+   "durationSec": 12.77,
+   "srcHash": "c1eed9857417fba8b828498884a3b51a988ea817"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "Rig had to climb it to fix the wire at the top, which is not a thing you should do with one working arm. He did it slowly. The goose watched from below and made a noise the whole time.",
+   "scene": {
+    "biome": "clearing",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     },
+     {
+      "kind": "goose",
+      "pos": "left",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "antenna",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "on top of",
+      "object": "antenna"
+     }
+    ]
+   },
+   "audio": "signal-11/p05.mp3",
+   "durationSec": 11.78,
+   "srcHash": "87ee0512021cdb1ab747c5c3608f2d44d6300dee"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "Then he switched the radio on. For a long moment there was nothing at all. And then, very faint and very far away, a signal came back — the same three notes, over and over, waiting for an answer.",
+   "scene": {
+    "biome": "clearing",
+    "time": "night",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     },
+     {
+      "kind": "goose",
+      "pos": "left",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "antenna",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-11/p06.mp3",
+   "durationSec": 13.75,
+   "srcHash": "1eafa2fa0fc2bb66449858228297b4caf3f7cf3b"
+  }
+ ],
+ "talk": [
+  {
+   "q": "Why did Rig have to build the tower on the ridge and not near his shelter?",
+   "expect": [
+    "trees",
+    "high",
+    "reach",
+    "sky",
+    "signal",
+    "above"
+   ]
+  },
+  {
+   "q": "What went wrong twice while he was building, and how did he solve it?",
+   "expect": [
+    "fell",
+    "over",
+    "rocks",
+    "tied",
+    "steady",
+    "bottom"
+   ]
+  },
+  {
+   "q": "A signal comes back at the end. Is that good news or bad news for Rig? Why?",
+   "expect": [
+    "both",
+    "found",
+    "help",
+    "danger",
+    "home",
+    "searching",
+    "not alone"
+   ]
+  }
+ ]
+}

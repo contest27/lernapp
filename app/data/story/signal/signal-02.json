@@ -1,0 +1,256 @@
+{
+ "id": "signal-02",
+ "arc": "signal",
+ "beat": 2,
+ "level": 3,
+ "title": "Rust and Rain",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "rusty",
+  "leak",
+  "damaged"
+ ],
+ "glossary": {
+  "rusty": {
+   "de": "rostig",
+   "en": "old metal with orange spots on it"
+  },
+  "leak": {
+   "de": "das Leck, undicht sein",
+   "en": "when water gets in through a small hole"
+  },
+  "damaged": {
+   "de": "beschädigt",
+   "en": "broken, but not completely"
+  },
+  "shoulder": {
+   "de": "die Schulter",
+   "en": "the part where your arm joins your body"
+  },
+  "drops": {
+   "de": "Tropfen",
+   "en": "very small round bits of water"
+  },
+  "warning": {
+   "de": "die Warnung",
+   "en": "a sign that tells you something is wrong"
+  },
+  "useless": {
+   "de": "nutzlos",
+   "en": "no good for anything"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "In the night it started to rain. Big drops fell on Rig's head and ran down his arms.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "rain",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "left",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-02/p01.mp3",
+   "durationSec": 6.34,
+   "srcHash": "7fec58e49c3c536f064faa9373d61f472d294554"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "A small red light came on inside him. It was a warning. Water was getting in. He had a leak.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "rain",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [],
+    "relations": []
+   },
+   "audio": "signal-02/p02.mp3",
+   "durationSec": 7.97,
+   "srcHash": "b8192ef9f6acda805d61e947b20f79be0b9b9b79"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "Rig looked at his left arm. The metal there was old and orange and rusty. He tried to lift it. It moved, but only a little.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "rain",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "right",
+      "size": "medium"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "next to",
+      "object": "rock"
+     }
+    ]
+   },
+   "audio": "signal-02/p03.mp3",
+   "durationSec": 9.94,
+   "srcHash": "3d8cb786409e85427dcfa7ae4c3438792cae477b"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "The shoulder was damaged. Something in the fall had broken it. Rig did not know how to fix it.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "rain",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "medium"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-02/p04.mp3",
+   "durationSec": 7.32,
+   "srcHash": "570cd5fcb162e8d80586060dd11023697bbe3b5d"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "He sat under a wide tree and waited. The rain came down all night. In the morning it stopped, and the forest was bright and wet and green.",
+   "scene": {
+    "biome": "forest",
+    "time": "dawn",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "under",
+      "object": "tree"
+     }
+    ]
+   },
+   "audio": "signal-02/p05.mp3",
+   "durationSec": 10.01,
+   "srcHash": "3e0fd8be8530e0c43abdc045d6e0f01e5e994f75"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "Rig stood up. His arm still would not move well. But he was not useless. He could walk. So he walked.",
+   "scene": {
+    "biome": "forest",
+    "time": "dawn",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "running"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-02/p06.mp3",
+   "durationSec": 9.36,
+   "srcHash": "7a8840e1ff6a3c927dad04e34f7ad886b8ff9d81"
+  }
+ ],
+ "talk": [
+  {
+   "q": "What did the red light inside Rig mean?",
+   "expect": [
+    "warning",
+    "water",
+    "leak",
+    "wrong",
+    "broken"
+   ]
+  },
+  {
+   "q": "Why do you think Rig sat under the tree instead of walking on?",
+   "expect": [
+    "rain",
+    "dry",
+    "wait",
+    "shelter",
+    "damaged"
+   ]
+  },
+  {
+   "q": "At the end Rig says he is not useless. What can he still do?",
+   "expect": [
+    "walk",
+    "move",
+    "go",
+    "keep"
+   ]
+  }
+ ]
+}

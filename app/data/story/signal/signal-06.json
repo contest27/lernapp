@@ -1,0 +1,284 @@
+{
+ "id": "signal-06",
+ "arc": "signal",
+ "beat": 6,
+ "level": 5,
+ "title": "Fire",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "flame",
+  "warmth",
+  "careful"
+ ],
+ "glossary": {
+  "flame": {
+   "de": "die Flamme",
+   "en": "the bright moving part of a fire"
+  },
+  "warmth": {
+   "de": "die Wärme",
+   "en": "the feeling of something being warm"
+  },
+  "careful": {
+   "de": "vorsichtig",
+   "en": "going slowly so nothing goes wrong"
+  },
+  "twigs": {
+   "de": "Zweige",
+   "en": "very thin branches"
+  },
+  "smouldered": {
+   "de": "glimmte",
+   "en": "burned slowly with no flame"
+  },
+  "curled": {
+   "de": "kringelte sich",
+   "en": "turned in a round shape"
+  },
+  "edge": {
+   "de": "der Rand",
+   "en": "where something ends"
+  },
+  "distance": {
+   "de": "die Ferne",
+   "en": "far away"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "It took Rig four evenings to make fire. The first three times, nothing happened at all.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "tree",
+      "pos": "left",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-06/p01.mp3",
+   "durationSec": 6.55,
+   "srcHash": "0db5662218aa406f547bfc6ad8cf58db901e3a69"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "On the fourth evening he built the twigs into a small tower, the way the branches of a nest lie across each other. Then he touched the wires together underneath.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "nest",
+      "pos": "centre",
+      "size": "small"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-06/p02.mp3",
+   "durationSec": 10.25,
+   "srcHash": "77261080d7876b6f172c2f01f5d0f5a3d0cec196"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "A thin line of smoke curled up. The wood smouldered. Rig did not move, because he had learned that this was the moment when it usually stopped.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "fog",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "fire",
+      "pos": "centre",
+      "size": "small"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-06/p03.mp3",
+   "durationSec": 10.1,
+   "srcHash": "a1139e60094ff3246ecd37d36651ccbdde42fa78"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "It did not stop. A small orange flame stood up in the middle of the twigs and began to eat them.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "fire",
+      "pos": "centre",
+      "size": "medium"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "next to",
+      "object": "fire"
+     }
+    ]
+   },
+   "audio": "signal-06/p04.mp3",
+   "durationSec": 6.72,
+   "srcHash": "93df7e1b4ec31818ab441755a6007fcae74a19e2"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "Rig held out his cold metal hands. He was careful, because he did not know yet how close was too close. The warmth reached him, and it was the first warm thing in a hundred years.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "fire",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "next to",
+      "object": "fire"
+     }
+    ]
+   },
+   "audio": "signal-06/p05.mp3",
+   "durationSec": 12.72,
+   "srcHash": "bdc4e0598757c6840c894c80fd26519daed0f221"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "At the edge of the trees, two eyes watched the flame. The fox had come back. She did not come closer. But she did not leave either, and she sat there in the distance until morning.",
+   "scene": {
+    "biome": "forest",
+    "time": "night",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     },
+     {
+      "kind": "fox",
+      "pos": "right",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "fire",
+      "pos": "centre",
+      "size": "medium"
+     },
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "fox",
+      "rel": "under",
+      "object": "tree"
+     }
+    ]
+   },
+   "audio": "signal-06/p06.mp3",
+   "durationSec": 12.74,
+   "srcHash": "9a5eb1f06ddcb2c18ee7b1dd75ed2d632add92ff"
+  }
+ ],
+ "talk": [
+  {
+   "q": "How many evenings did it take Rig to make fire, and what does that tell you about him?",
+   "expect": [
+    "four",
+    "kept",
+    "trying",
+    "patient",
+    "not give up"
+   ]
+  },
+  {
+   "q": "Why was Rig careful with his hands near the flame?",
+   "expect": [
+    "hot",
+    "burn",
+    "damage",
+    "too close",
+    "did not know"
+   ]
+  },
+  {
+   "q": "The fox came back but stayed far away. Why do you think she did that?",
+   "expect": [
+    "curious",
+    "scared",
+    "warm",
+    "watch",
+    "not sure",
+    "safe"
+   ]
+  }
+ ]
+}

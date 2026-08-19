@@ -1,0 +1,261 @@
+{
+ "id": "signal-05",
+ "arc": "signal",
+ "beat": 5,
+ "level": 4,
+ "title": "The Crate",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "crate",
+  "tools",
+  "spark"
+ ],
+ "glossary": {
+  "crate": {
+   "de": "die Kiste",
+   "en": "a strong wooden box for carrying things"
+  },
+  "tools": {
+   "de": "Werkzeuge",
+   "en": "things you use to build or fix"
+  },
+  "spark": {
+   "de": "der Funke",
+   "en": "a tiny bit of fire that jumps out"
+  },
+  "buried": {
+   "de": "vergraben",
+   "en": "covered up under the ground"
+  },
+  "lid": {
+   "de": "der Deckel",
+   "en": "the top of a box that opens"
+  },
+  "wire": {
+   "de": "das Kabel, der Draht",
+   "en": "a thin metal line that carries power"
+  },
+  "clever": {
+   "de": "klug",
+   "en": "good at working things out"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "Rig went back to the wreck. He had not wanted to. But he needed things, and the wreck was where things were.",
+   "scene": {
+    "biome": "wreck",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "right",
+      "size": "medium"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-05/p01.mp3",
+   "durationSec": 7.92,
+   "srcHash": "d3d586ec81230557f89903428574c12dbf8793ae"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "Half buried under the wet earth, he found a crate. It was yellow, and it was still closed.",
+   "scene": {
+    "biome": "wreck",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "crate",
+      "pos": "centre",
+      "size": "medium"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-05/p02.mp3",
+   "durationSec": 6.82,
+   "srcHash": "9a7532dc7df5ff8d62fb992591d282f79bd5ff31"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "The lid was heavy. Rig pushed with his good arm for a long time. At last it came open, and he looked inside.",
+   "scene": {
+    "biome": "wreck",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "crate",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "robot",
+      "rel": "next to",
+      "object": "crate"
+     }
+    ]
+   },
+   "audio": "signal-05/p03.mp3",
+   "durationSec": 8.35,
+   "srcHash": "941d1428ffa53bf645b5698a17d7bc884ec5b70c"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "Tools. Small ones and big ones. Wire. A short piece of pipe. None of it looked like food, because none of it was.",
+   "scene": {
+    "biome": "wreck",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "right",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "crate",
+      "pos": "left",
+      "size": "medium"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-05/p04.mp3",
+   "durationSec": 10.2,
+   "srcHash": "55874e5509da02cdfa7f7d6c6d93693a9b6dc1a0"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "Rig took two pieces of wire and touched them together. A bright spark jumped out and died. He did it again. Another spark.",
+   "scene": {
+    "biome": "wreck",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "crate",
+      "pos": "left",
+      "size": "small"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-05/p05.mp3",
+   "durationSec": 9.67,
+   "srcHash": "185703c95212f27675a68a7a1255ee969cc9f219"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "He looked at the dry branches by his shelter. Then he looked at the wire in his hand. Rig was old, and slow, and half broken. But he was also clever.",
+   "scene": {
+    "biome": "forest",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "crate",
+      "pos": "left",
+      "size": "small"
+     },
+     {
+      "kind": "tree",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-05/p06.mp3",
+   "durationSec": 11.66,
+   "srcHash": "be43a793353bcd20b276ccc920d5eb99aa479949"
+  }
+ ],
+ "talk": [
+  {
+   "q": "Why did Rig go back to the wreck when he did not want to?",
+   "expect": [
+    "needed",
+    "things",
+    "tools",
+    "find",
+    "help"
+   ]
+  },
+  {
+   "q": "What was in the crate?",
+   "expect": [
+    "tools",
+    "wire",
+    "pipe",
+    "not food"
+   ]
+  },
+  {
+   "q": "At the end Rig looks at the branches and then at the wire. What is he planning?",
+   "expect": [
+    "fire",
+    "burn",
+    "warm",
+    "spark",
+    "light"
+   ]
+  }
+ ]
+}

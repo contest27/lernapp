@@ -1,0 +1,292 @@
+{
+ "id": "signal-12",
+ "arc": "signal",
+ "beat": 12,
+ "level": 6,
+ "title": "The Choice",
+ "rate": "-8%",
+ "voices": {
+  "narrator": "en-GB-SoniaNeural"
+ },
+ "speakers": {
+  "narrator": "Narrator"
+ },
+ "power": [
+  "message",
+  "leave",
+  "home"
+ ],
+ "glossary": {
+  "message": {
+   "de": "die Nachricht",
+   "en": "words you send to somebody else"
+  },
+  "leave": {
+   "de": "verlassen, weggehen",
+   "en": "to go away from a place"
+  },
+  "home": {
+   "de": "das Zuhause",
+   "en": "the place you belong"
+  },
+  "repair": {
+   "de": "die Reparatur",
+   "en": "making a broken thing work again"
+  },
+  "coordinates": {
+   "de": "Koordinaten",
+   "en": "numbers that say exactly where a place is"
+  },
+  "silence": {
+   "de": "die Stille",
+   "en": "when there is no sound"
+  },
+  "decide": {
+   "de": "entscheiden",
+   "en": "to choose between two things"
+  },
+  "properly": {
+   "de": "richtig",
+   "en": "in the right way"
+  }
+ },
+ "steps": [
+  {
+   "id": "p01",
+   "speaker": "narrator",
+   "text": "The three notes were a recovery beacon. Rig knew what it wanted: coordinates, a unit number, and a damage report. Send those, and a ship would come.",
+   "scene": {
+    "biome": "clearing",
+    "time": "night",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "antenna",
+      "pos": "right",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-12/p01.mp3",
+   "durationSec": 11.4,
+   "srcHash": "30417a765554ba77dd1199554873e4a0e286a828"
+  },
+  {
+   "id": "p02",
+   "speaker": "narrator",
+   "text": "They would take him back. There would be a workshop, and a repair, and a new arm that worked. He would be a machine that functioned properly again.",
+   "scene": {
+    "biome": "clearing",
+    "time": "night",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "antenna",
+      "pos": "centre",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-12/p02.mp3",
+   "durationSec": 9.96,
+   "srcHash": "aca76ec3f525e6557f552aca9de7ac62f084c015"
+  },
+  {
+   "id": "p03",
+   "speaker": "narrator",
+   "text": "Rig sat on the ridge with the radio in his lap and did not send anything for two days. Below him the forest went on being a forest. The goose slept against his leg.",
+   "scene": {
+    "biome": "clearing",
+    "time": "dawn",
+    "weather": "fog",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "sitting"
+     },
+     {
+      "kind": "goose",
+      "pos": "centre",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "rock",
+      "pos": "left",
+      "size": "medium"
+     }
+    ],
+    "relations": [
+     {
+      "subject": "goose",
+      "rel": "next to",
+      "object": "robot"
+     }
+    ]
+   },
+   "audio": "signal-12/p03.mp3",
+   "durationSec": 11.59,
+   "srcHash": "2c146d72452d2cf0458730f589508c3697e5a20e"
+  },
+  {
+   "id": "p04",
+   "speaker": "narrator",
+   "text": "He thought about what he had built here. A shelter of branches. A fire he had failed at three times. A bridge over a stream. A bird that had come out of an egg into his hands.",
+   "scene": {
+    "biome": "forest",
+    "time": "day",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "left",
+      "state": "standing"
+     },
+     {
+      "kind": "fox",
+      "pos": "right",
+      "state": "sitting"
+     }
+    ],
+    "props": [
+     {
+      "kind": "fire",
+      "pos": "centre",
+      "size": "medium"
+     },
+     {
+      "kind": "nest",
+      "pos": "right",
+      "size": "small"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-12/p04.mp3",
+   "durationSec": 13.18,
+   "srcHash": "9d93bc556511d70aff7eb021440b3aff4ce2ead4"
+  },
+  {
+   "id": "p05",
+   "speaker": "narrator",
+   "text": "None of that had been in his instructions. All of it he had decided himself. And a machine that can decide things, Rig thought, should probably decide this one too.",
+   "scene": {
+    "biome": "clearing",
+    "time": "dusk",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "standing"
+     }
+    ],
+    "props": [
+     {
+      "kind": "antenna",
+      "pos": "left",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-12/p05.mp3",
+   "durationSec": 11.59,
+   "srcHash": "c3eb1c41c30d146513f7276a5ea430368b12fd55"
+  },
+  {
+   "id": "p06",
+   "speaker": "narrator",
+   "text": "On the third morning he sent one short message. It was not coordinates. It said: UNIT INTACT. DO NOT RECOVER. Then he switched the radio off, and did not leave, and walked back down the ridge towards the smoke of his own fire, which was, he had decided, home.",
+   "scene": {
+    "biome": "forest",
+    "time": "dawn",
+    "weather": "clear",
+    "actors": [
+     {
+      "kind": "robot",
+      "pos": "centre",
+      "state": "running"
+     },
+     {
+      "kind": "goose",
+      "pos": "centre",
+      "state": "running"
+     }
+    ],
+    "props": [
+     {
+      "kind": "fire",
+      "pos": "right",
+      "size": "medium"
+     },
+     {
+      "kind": "tree",
+      "pos": "left",
+      "size": "large"
+     }
+    ],
+    "relations": []
+   },
+   "audio": "signal-12/p06.mp3",
+   "durationSec": 19.32,
+   "srcHash": "591957b5bcf655dcc6aa92422032d343f2ff346d"
+  }
+ ],
+ "talk": [
+  {
+   "q": "What did the beacon want Rig to send?",
+   "expect": [
+    "coordinates",
+    "unit",
+    "number",
+    "damage",
+    "report",
+    "where"
+   ]
+  },
+  {
+   "q": "What would Rig have got if he had gone back?",
+   "expect": [
+    "repair",
+    "arm",
+    "workshop",
+    "fixed",
+    "new",
+    "work"
+   ]
+  },
+  {
+   "q": "He chose to stay. Do you think he made the right choice? Say why.",
+   "expect": [
+    "yes",
+    "no",
+    "friends",
+    "built",
+    "home",
+    "arm",
+    "broken",
+    "free",
+    "belongs"
+   ]
+  }
+ ]
+}
