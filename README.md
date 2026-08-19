@@ -26,9 +26,16 @@ Then open `http://localhost:8125/` (app) and
 
 ## Live
 
-<https://contest27.github.io/lernapp/> — installable as a PWA (iPad: Share →
-Add to Home Screen). An update lands on the **second** real launch of an
-installed app.
+- **<https://lernapp.pfeil.workers.dev>** — Cloudflare Worker with static
+  assets. The one to install: `/api/chat` and `/api/stt` keep the API keys on
+  the server, so nothing has to be typed on the device.
+- <https://contest27.github.io/lernapp/> — the older GitHub Pages build, kept
+  only until the move is finished. No server there, so the tutor falls back to
+  a key entered in the parent corner (see `app/js/qa/endpoint.js`).
+
+Installable as a PWA (iPad: Share → Add to Home Screen). An update lands on the
+**second** real launch of an installed app. The two builds keep separate
+progress — export a backup before switching.
 
 ## Status
 
