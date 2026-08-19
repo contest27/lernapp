@@ -1,7 +1,7 @@
 // Precaching service worker. Bump CACHE_VERSION on every deploy so clients
 // pick up new content; old caches are cleared on activate.
 
-const CACHE_VERSION = 'lernapp-v8';
+const CACHE_VERSION = 'lernapp-v9';
 
 // English (Wordforge) chapter narration MP3s live in their own long-lived
 // cache that SURVIVES CACHE_VERSION bumps: they are addressed by chapter
@@ -41,6 +41,7 @@ const ASSETS = [
   './js/ui/gloss.js',
   './js/ui/explain.js',
   './js/qa/tutor.js',
+  './js/qa/endpoint.js',
   './js/tts.js',
   './js/maths/content/gen.js',
   './js/maths/content/vis.js',
@@ -102,8 +103,14 @@ self.addEventListener('activate', (e) => {
 // network-first (so a deploy actually arrives), everything else cache-first
 // with a background refresh into the versioned cache.
 self.addEventListener('fetch', (e) => {
+  // Never touch anything but GET. Since 2026-08-16 the app POSTs to its own
+  // origin (/api/chat, /api/stt on Cloudflare Pages): the Cache API rejects a
+  // POST outright, and cloning a streaming answer only to fail at put() risks
+  // stalling the stream the tutor is reading. Let non-GET straight through.
+  if (e.request.method !== 'GET') return;
+
   const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return; // API calls etc. go straight to the network
+  if (url.origin !== location.origin) return; // third-party calls go straight to the network
 
   if (e.request.mode === 'navigate') {
     const isShell = url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');

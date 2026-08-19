@@ -178,15 +178,18 @@ registerScreen('parent', () => {
   // ---- AI tutor ----
   const ai = section('AI tutor (optional)');
   ai.append(h('p', { class: 'muted' },
-    'With an Anthropic API key he can type his own questions during explanations, and words he taps that are '
-    + 'not in the built-in dictionary get translated. Cost is a few cents per month at this usage. Create a key '
-    + 'at console.anthropic.com. The key is stored only on this device and is never included in backups.'));
+    'The tutor answers his own questions during explanations, and translates tapped words the built-in '
+    + 'dictionary does not know.'),
+    h('p', { class: 'muted' },
+      'On the Cloudflare build the key lives on the server and there is nothing to enter here — leave this empty. '
+      + 'The field is only for the GitHub Pages build, which has no server: there the key is stored on this device '
+      + 'alone and is never part of a backup. Either way, "Test" checks whether the tutor actually answers.'));
   const keyIn = h('input', {
     class: 'text-in', type: 'password', placeholder: 'sk-ant-…',
     value: shell.apiKey || '', autocomplete: 'off',
   });
   const status = h('span', { class: 'muted key-status' },
-    shell.apiKey ? 'Key saved.' : 'No key set — the dictionary and question chips still work offline.');
+    shell.apiKey ? 'Key saved on this device.' : 'No key here — fine on the server build; on GitHub Pages the dictionary and chips still work offline.');
   const saveBtn = h('button', {
     class: 'btn', onclick: () => {
       shell.apiKey = keyIn.value.trim();
@@ -207,7 +210,7 @@ registerScreen('parent', () => {
         status.textContent = describeTutorError(e);
       }
     },
-  }, 'Test');
+  }, 'Test tutor');
   ai.append(h('div', { class: 'row gap' }, keyIn), h('div', { class: 'row gap' }, saveBtn, testBtn, status));
 
   const log = slice.qaLog.slice(-20).reverse();

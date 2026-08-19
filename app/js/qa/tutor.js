@@ -1,7 +1,8 @@
 // Browser-direct call to the Anthropic Messages API ("bring your own key").
 // The key lives only in this device's localStorage; backups strip it.
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
+import { postMessages } from './endpoint.js';
+
 const MODEL = 'claude-haiku-4-5';
 
 function systemPrompt(topic) {
@@ -125,16 +126,9 @@ export async function askTutor({ question, topic, apiKey, onText = null, system 
 
   let res;
   try {
-    res = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body,
-    });
+    // Server proxy where one exists, browser-direct with the device key where
+    // it does not — see qa/endpoint.js.
+    res = await postMessages(body, { apiKey });
   } catch (e) {
     // Fetch only throws for transport-level failures: no connection, DNS
     // failure, or a content blocker / firewall dropping the request.

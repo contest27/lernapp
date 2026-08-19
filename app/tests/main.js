@@ -42,6 +42,7 @@ async function run() {
       focus: await import('../js/ui/focus.js'),
       tutor: await import('../js/qa/tutor.js'),
       mapScene: await import('../js/ui/map-scene.js'),
+      endpoint: await import('../js/qa/endpoint.js'),
       rhythm: await import('../js/shell/rhythm.js'),
       // English (Wordforge port)
       enVocab: await import('../js/english/engine/vocab.js'),
@@ -422,12 +423,12 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v8'"), 'CACHE_VERSION was not bumped for the Wordforge port release');
+    ok(swText.includes("'lernapp-v9'"), 'CACHE_VERSION was not bumped for the Wordforge port release');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
       "'./js/ui/lesson.js'", "'./js/ui/gloss.js'", "'./js/ui/explain.js'", "'./js/ui/buddy.js'",
-      "'./js/qa/tutor.js'", "'./js/tts.js'", "'./js/ui/map.js'", "'./js/ui/map-scene.js'",
+      "'./js/qa/tutor.js'", "'./js/qa/endpoint.js'", "'./js/tts.js'", "'./js/ui/map.js'", "'./js/ui/map-scene.js'",
       "'./js/ui/svg.js'", "'./js/shell/rhythm.js'",
       "'./js/english/engine/level.js'", "'./js/english/engine/story.js'", "'./js/english/engine/vocab.js'",
       "'./js/english/content/story-index.js'",
@@ -912,6 +913,85 @@ async function run() {
         ok(!seen.has(w), `"${w}" is a power word in both ${seen.get(w)} and ${ch.id}`);
         seen.set(w, ch.id);
       }
+    }
+  });
+
+  // ==================== H. ENDPOINT (server proxy vs device key) ====================
+
+  test('sw: the service worker never intercepts a non-GET request', () => {
+    // The app POSTs to its own origin now. A cache-first handler would try to
+    // cache the POST (the Cache API rejects it) and would clone a streaming
+    // answer for nothing — the guard has to come before anything else.
+    ok(swText, 'sw.js did not load');
+    const handler = swText.slice(swText.indexOf("addEventListener('fetch'"));
+    const guard = handler.indexOf("method !== 'GET'");
+    const firstRespond = handler.indexOf('respondWith');
+    ok(guard > -1, 'no non-GET guard in the fetch handler');
+    ok(guard < firstRespond, 'the guard must come before any respondWith');
+  });
+
+  await atest('endpoint: a 404 from a static host is not mistaken for a proxy answer', async () => {
+    // GitHub Pages answers a POST to a missing path with its 404 HTML page;
+    // Cloudflare Pages answers /api/chat with JSON or an SSE stream. Getting
+    // this wrong would send every question into the void on the static build.
+    const { postMessages, resetProxyProbe, usingProxy } = mods.endpoint;
+    const real = window.fetch;
+    const calls = [];
+    try {
+      resetProxyProbe();
+      window.fetch = async (url, opts) => {
+        calls.push(String(url));
+        if (String(url).includes('/api/chat')) {
+          return new Response('<!doctype html><title>404</title>', { status: 404, headers: { 'content-type': 'text/html' } });
+        }
+        return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } });
+      };
+      const res = await postMessages('{}', { apiKey: 'sk-test' });
+      eq(res.status, 200, 'falls through to the direct call');
+      ok(calls.some((u) => u.includes('/api/chat')), 'the proxy is tried first');
+      ok(calls.some((u) => u.includes('api.anthropic.com')), 'then the direct endpoint');
+      ok(!usingProxy(), 'and it remembers there is no proxy');
+      // Second call must not probe again — the answer cannot change mid-page.
+      calls.length = 0;
+      await postMessages('{}', { apiKey: 'sk-test' });
+      ok(!calls.some((u) => u.includes('/api/chat')), 'the probe result is cached');
+    } finally {
+      window.fetch = real;
+      resetProxyProbe();
+    }
+  });
+
+  await atest('endpoint: a real proxy answer is used and no key is needed', async () => {
+    const { postMessages, resetProxyProbe, usingProxy } = mods.endpoint;
+    const real = window.fetch;
+    const calls = [];
+    try {
+      resetProxyProbe();
+      window.fetch = async (url) => {
+        calls.push(String(url));
+        return new Response('data: {}', { status: 200, headers: { 'content-type': 'text/event-stream' } });
+      };
+      const res = await postMessages('{}', {});   // deliberately NO key
+      eq(res.status, 200);
+      ok(usingProxy(), 'an SSE answer means a proxy is there');
+      ok(!calls.some((u) => u.includes('api.anthropic.com')), 'the key path is never touched');
+    } finally {
+      window.fetch = real;
+      resetProxyProbe();
+    }
+  });
+
+  await atest('endpoint: no proxy and no key fails loudly rather than silently', async () => {
+    const { postMessages, resetProxyProbe } = mods.endpoint;
+    const real = window.fetch;
+    try {
+      resetProxyProbe();
+      window.fetch = async () => new Response('nope', { status: 404, headers: { 'content-type': 'text/html' } });
+      const res = await postMessages('{}', {});
+      ok(!res.ok, 'the caller sees a failure it can report');
+    } finally {
+      window.fetch = real;
+      resetProxyProbe();
     }
   });
 

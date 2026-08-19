@@ -4,7 +4,8 @@
 //
 // The key lives only in this device's localStorage; backups strip it.
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
+import { postMessages } from '../../qa/endpoint.js';
+
 
 // Talk grading is high-volume and mechanical — Haiku is the right tier.
 // The genie both judges his English and emits a structured scene, which is the
@@ -59,16 +60,9 @@ export async function callClaude({ system, messages, apiKey, model, maxTokens, o
 
   let res;
   try {
-    res = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body,
-    });
+    // Server proxy where one exists, browser-direct with the device key where
+    // it does not — see ../../qa/endpoint.js.
+    res = await postMessages(body, { apiKey });
   } catch (e) {
     // fetch only throws for transport-level failure: no connection, DNS, or a
     // content blocker dropping the request. navigator.onLine is unreliable in
