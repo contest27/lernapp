@@ -26,12 +26,13 @@ Then open `http://localhost:8125/` (app) and
 
 ## Live
 
-- **<https://lernapp.pfeil.workers.dev>** — Cloudflare Worker with static
-  assets. The one to install: `/api/chat` and `/api/stt` keep the API keys on
-  the server, so nothing has to be typed on the device.
-- <https://contest27.github.io/lernapp/> — the older GitHub Pages build, kept
-  only until the move is finished. No server there, so the tutor falls back to
-  a key entered in the parent corner (see `app/js/qa/endpoint.js`).
+- **Cloudflare Pages** — in setup; replaces the deleted Worker construction
+  (see `quality_reports/handoffs/2026-08-16_hosting-neu-als-pages.md`). Once
+  live it is the one to install: `/api/chat` and `/api/stt` keep the API keys
+  on the server, so nothing has to be typed on the device.
+- <https://contest27.github.io/lernapp/> — the GitHub Pages build, the live
+  one for now. No server there, so the tutor falls back to a key entered in
+  the parent corner (see `app/js/qa/endpoint.js`).
 
 Installable as a PWA (iPad: Share → Add to Home Screen). An update lands on the
 **second** real launch of an installed app. The two builds keep separate

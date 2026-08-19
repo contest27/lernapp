@@ -22,7 +22,7 @@ without an explicit decision logged in MEMORY.md.
 | Serve locally | `python3 tools/serve.py 8125` (no-cache; SW skipped on localhost) |
 | Tests | open `http://localhost:8125/tests/tests.html` — must show 0 failed |
 | Icons | `python3 tools/make_icons.py` |
-| Deploy | push to `main`; Cloudflare builds `wrangler.jsonc` → <https://lernapp.pfeil.workers.dev> (GitHub Pages still publishes `app/` in parallel until the move is finished) |
+| Deploy | push to `main`; Cloudflare Pages serves `app/` + `functions/api/` (project being re-created, URL follows; GitHub Pages publishes `app/` in parallel until the move is finished) |
 
 ## Non-negotiables
 
