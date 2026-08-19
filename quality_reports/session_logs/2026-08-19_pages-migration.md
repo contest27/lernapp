@@ -46,9 +46,11 @@
 
 Über die Chrome-Sitzung im Zero-Trust-Dashboard („Cloudflare One"): neue
 Self-hosted-Anwendung `lernapp-e3h.pages.dev` — nackte Produktions-Domain
-ohne Wildcard, bestehende Policy **„Email Access"** (3 Adressen,
-unverändert), Session Duration **1 Monat**; exakt das Muster der
-Facharzttrainer-App. Der „Access policy"-Schalter in den Pages-Settings
+ohne Wildcard, bestehende Policy **„Email Access"**, Session Duration
+**1 Monat**; exakt das Muster der Facharzttrainer-App. Die Policy wurde
+anschließend um `sevpf@icloud.com` ergänzt (4 Adressen; gilt für beide
+Apps, die sie nutzen — Lernapp-Produktion und Facharzttrainer), damit der
+PIN-Flow auf dem iPad mit einem dort erreichbaren Postfach funktioniert. Der „Access policy"-Schalter in den Pages-Settings
 schützt nur Preview-URLs (Dashboard-Text: „Production pages.dev and custom
 domains are managed separately in Zero Trust"); die auto-angelegte
 Preview-App (`*.lernapp-e3h.pages.dev`) blieb unangetastet.
