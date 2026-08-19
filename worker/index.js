@@ -61,21 +61,6 @@ export default {
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
 
-    // TEMPORARY diagnostic (2026-08-16) — remove as soon as the secrets are
-    // confirmed. Reports only the NAMES of the bindings and the LENGTH of each
-    // string value; never a value. Added because the dashboard renders a
-    // trailing space or a doubled letter in a secret name identically to the
-    // correct one, and guessing from screenshots had already failed twice.
-    if (pathname === '/api/_env') {
-      const report = {};
-      for (const [name, value] of Object.entries(env)) {
-        report[JSON.stringify(name)] = typeof value === 'string'
-          ? `string(len ${value.length})`
-          : typeof value;
-      }
-      return json({ bindings: report });
-    }
-
     if (pathname === '/api/chat') {
       return proxy(request, {
         url: ANTHROPIC_URL,
