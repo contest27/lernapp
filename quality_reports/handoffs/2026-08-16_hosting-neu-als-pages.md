@@ -1,6 +1,10 @@
 # Handoff — Hosting neu aufsetzen, diesmal als Cloudflare **Pages**
 
-**Erstellt:** 2026-08-16, Ende einer langen Session · **Status:** OPEN
+**Erstellt:** 2026-08-16, Ende einer langen Session ·
+**Status:** Hosting umgesetzt 2026-08-19 — Pages-Projekt live als
+<https://lernapp-e3h.pages.dev>, beide Proxys verifiziert
+(Log: `../session_logs/2026-08-19_pages-migration.md`).
+Offen: Access-Regel (§3.1 Schritt 4), iPad-Umzug (§3.1 Schritt 5), §4, §5.
 **Entscheidung:** Das Cloudflare-Hosting wird verworfen und sauber als
 **Pages-Projekt** neu angelegt. Alles andere an der App ist fertig und grün.
 
