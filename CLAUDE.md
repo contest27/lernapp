@@ -22,7 +22,7 @@ without an explicit decision logged in MEMORY.md.
 | Serve locally | `python3 tools/serve.py 8125` (no-cache; SW skipped on localhost) |
 | Tests | open `http://localhost:8125/tests/tests.html` — must show 0 failed |
 | Icons | `python3 tools/make_icons.py` |
-| Deploy | push to `main`; Cloudflare Pages serves `app/` + `functions/api/` (project being re-created, URL follows; GitHub Pages publishes `app/` in parallel until the move is finished) |
+| Deploy | push to `main`; Cloudflare Pages serves `app/` + `functions/api/` → <https://lernapp-e3h.pages.dev> (GitHub Pages workflow removed 2026-08-19; the old build at contest27.github.io/lernapp is frozen) |
 
 ## Non-negotiables
 
@@ -70,6 +70,7 @@ exists.
 ## Phase plan (2026-08-16)
 
 B0 scaffold ✓ → B1 Y6 spine ✓ → B2 content 6A ✓ (6B/6C open) → B3 diagnostic ✓
-→ practice UI ✓ → map ✓ → parent corner ✓ → B6 deploy ✓ →
-open: 6B/6C, B4 Y5 topic modules, B5 Wordforge port.
+→ practice UI ✓ → map ✓ → parent corner ✓ → B5 Wordforge ✓ → B6 deploy ✓
+(Cloudflare Pages 2026-08-19) →
+open: 6B/6C, B4 Y5 topic modules, Gemini speech module.
 Plan of record: `~/.claude/plans/inherited-crafting-lantern.md`.

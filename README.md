@@ -26,13 +26,12 @@ Then open `http://localhost:8125/` (app) and
 
 ## Live
 
-- **Cloudflare Pages** — in setup; replaces the deleted Worker construction
-  (see `quality_reports/handoffs/2026-08-16_hosting-neu-als-pages.md`). Once
-  live it is the one to install: `/api/chat` and `/api/stt` keep the API keys
-  on the server, so nothing has to be typed on the device.
-- <https://contest27.github.io/lernapp/> — the GitHub Pages build, the live
-  one for now. No server there, so the tutor falls back to a key entered in
-  the parent corner (see `app/js/qa/endpoint.js`).
+- **<https://lernapp-e3h.pages.dev>** — Cloudflare Pages. The one to install:
+  `/api/chat` and `/api/stt` keep the API keys on the server, so nothing has
+  to be typed on the device.
+- <https://contest27.github.io/lernapp/> — the old GitHub Pages build, frozen
+  (its deploy workflow was removed 2026-08-19). No server there, so the tutor
+  falls back to a key entered in the parent corner (see `app/js/qa/endpoint.js`).
 
 Installable as a PWA (iPad: Share → Add to Home Screen). An update lands on the
 **second** real launch of an installed app. The two builds keep separate
@@ -42,6 +41,7 @@ progress — export a backup before switching.
 
 Book 6A is complete and practisable: 13 topics, diagnostic, guided lessons
 with tap-a-word German glosses, practice ramp, spaced review, treasure map,
-parent corner. Books 6B/6C and the English module are the work in progress;
+parent corner. The English module (Wordforge) is ported; books 6B/6C, the Y5
+topic modules and the Gemini speech module are the work in progress;
 see `quality_reports/reference/y6-topic-spine.md` for the curriculum spine and
 `CLAUDE.md` for the phase plan.
