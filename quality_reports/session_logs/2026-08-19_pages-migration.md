@@ -42,16 +42,36 @@
 - Handoff-Status aktualisiert; Cloudflare-Lektion nach `~/.claude/MEMORY.md`
   (`[LEARN:cloudflare]`).
 
+## Nachtrag (gleiche Session) — Access-Regel gesetzt
+
+Über die Chrome-Sitzung im Zero-Trust-Dashboard („Cloudflare One"): neue
+Self-hosted-Anwendung `lernapp-e3h.pages.dev` — nackte Produktions-Domain
+ohne Wildcard, bestehende Policy **„Email Access"** (3 Adressen,
+unverändert), Session Duration **1 Monat**; exakt das Muster der
+Facharzttrainer-App. Der „Access policy"-Schalter in den Pages-Settings
+schützt nur Preview-URLs (Dashboard-Text: „Production pages.dev and custom
+domains are managed separately in Zero Trust"); die auto-angelegte
+Preview-App (`*.lernapp-e3h.pages.dev`) blieb unangetastet.
+**Messung danach:** `/`, `/api/chat`, `/api/stt` antworten
+unauthentifiziert mit 302 auf `floral-sun-d275.cloudflareaccess.com` —
+der offene Proxy ist zu.
+
+**Watch-Item für den iPad-Umzug:** die PWA cached die Shell per Service
+Worker; nach Ablauf der Access-Session scheitern API-Calls still (Redirect
+auf Login-HTML → `endpoint.js` fällt vermutlich auf den Gerätekey-Pfad
+zurück). Erste Anmeldung auf dem iPad in Safari VOR dem Installieren
+durchlaufen; auf dem Gerät beobachten, ob die Monats-Session im
+Standalone-Modus sauber erneuert wird — sonst §4-Punkt: 302-Erkennung +
+Re-Login-Hinweis in `endpoint.js`.
+
 ## Offen (Stand Session-Ende)
 
-1. **Access-Regel (§3.1.4) — dringend:** `/api/chat` ist bis dahin ein
-   offener Proxy auf Sebastians Rechnung; die Verifikation oben lief ohne
-   jede Authentifizierung durch. Vor Weitergabe der URL einrichten.
-2. **iPad-Umzug (§3.1.5):** erst Backup im Parent corner der alten
+1. **iPad-Umzug (§3.1.5):** erst Backup im Parent corner der alten
    Installation exportieren, dann neue URL installieren und einspielen —
-   die Installationen haben getrennten Fortschritt.
-3. §4-Arbeit: Gemini-Sprachmodul, Bücher 6B/6C, Y5-Themenmodule (B4).
-4. §5-Entscheidung: Hub-Streak vs. Wordforge-Regel „kein Streak sichtbar".
-5. Später, wenn nur noch Pages läuft: `directPost`/`apiKey`-Pfad aus
+   die Installationen haben getrennten Fortschritt. Access-PIN-Flow in
+   Safari vor dem Home-Screen-Install (siehe Watch-Item).
+2. §4-Arbeit: Gemini-Sprachmodul, Bücher 6B/6C, Y5-Themenmodule (B4).
+3. §5-Entscheidung: Hub-Streak vs. Wordforge-Regel „kein Streak sichtbar".
+4. Später, wenn nur noch Pages läuft: `directPost`/`apiKey`-Pfad aus
    `app/js/qa/endpoint.js` + Schlüsselfeld im Parent corner ausbauen
    (Kommentar in der Datei).
