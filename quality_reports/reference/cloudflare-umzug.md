@@ -1,75 +1,79 @@
-# Umzug auf Cloudflare Pages — was noch von Hand passieren muss
+# Umzug auf Cloudflare — Stand und was noch von Hand passieren muss
 
-**Stand:** 2026-08-16. Der Code ist fertig und gepusht; auf dieser Maschine gibt
-es weder `wrangler` noch Cloudflare-Credentials, deshalb bleiben die folgenden
-Schritte im Dashboard.
+**Stand:** 2026-08-16, nach dem Blick ins Dashboard.
 
-## Warum der Umzug
+## Warum überhaupt
 
-GitHub Pages ist rein statisch. Damit muss jeder Schlüssel auf dem Gerät liegen
-und von Hand eingetippt werden. Cloudflare Pages kann **Functions** ausführen:
-der Schlüssel liegt dann als Secret auf dem Server, und auf dem iPad ist nichts
-mehr einzugeben — weder Anthropic noch Gemini. Für eine Kinder-App auf einem
-Familien-iPad ist das der eigentliche Gewinn; die Spracherkennung (Gemini)
-braucht es ohnehin.
+GitHub Pages ist rein statisch: jeder Schlüssel muss auf dem Gerät liegen und
+von Hand eingetippt werden. Cloudflare kann Code ausführen — der Schlüssel liegt
+dann als Secret auf dem Server, und auf dem iPad ist nichts mehr einzugeben,
+weder Anthropic noch Gemini. Für eine Kinder-App auf einem Familien-iPad ist das
+der eigentliche Gewinn; die Spracherkennung braucht es ohnehin.
 
-## Was im Repo schon liegt
+## Was das Projekt tatsächlich ist (wichtig)
+
+Im Dashboard angelegt wurde **kein Pages-Projekt**, sondern ein **Worker mit
+statischen Assets** (`/workers/services/view/lernapp/production`, Deploy-Kommando
+`npx wrangler deploy`). Zwei Konsequenzen, beide im Dashboard sichtbar:
+
+1. *„Variables cannot be added to a Worker that only has static assets."* —
+   solange der Worker kein echtes Skript hat, lassen sich **gar keine Secrets**
+   hinterlegen.
+2. Das `functions/`-Verzeichnis ist eine reine **Pages**-Konvention und wird von
+   einem Assets-Worker ignoriert. Es wurde deshalb entfernt.
+
+Live läuft die App auf **https://lernapp.pfeil.workers.dev**.
+
+## Was im Repo jetzt liegt
 
 ```
-functions/api/chat.js   Anthropic-Proxy   (Secret: ANTHROPIC_API_KEY)
-functions/api/stt.js    Gemini-Transkription (Secret: GEMINI_API_KEY)
-app/js/qa/endpoint.js   entscheidet zur Laufzeit: Proxy oder Gerät
+wrangler.jsonc     name/main/assets; run_worker_first: ["/api/*"]
+worker/index.js    /api/chat (Anthropic) + /api/stt (Gemini), sonst ASSETS
+app/js/qa/endpoint.js  entscheidet zur Laufzeit: Proxy oder Geräteschlüssel
 ```
 
-`endpoint.js` probiert zuerst `./api/chat`. Antwortet dort JSON oder ein
-SSE-Stream, gewinnt der Proxy und der Geräteschlüssel wird nie angefasst.
-Kommt 404/405/HTML zurück (= statischer Host), fällt es auf den
-Browser-Direktaufruf mit dem im Parent corner eingetragenen Schlüssel zurück.
-**Derselbe Build läuft dadurch auf beiden Hosts** — der Umzug hat kein Zeitloch,
-in dem der Tutor tot ist.
+`run_worker_first` ist die Stelle, an der so ein Umbau still scheitert: Assets
+werden normalerweise **vor** dem Skript ausgeliefert, `/api/chat` liefe also ins
+Asset-404 (oder bei SPA-Handling in die index.html) und der Proxy käme nie zum
+Zug. Die Zeile zwingt genau diese Pfade durch den Worker.
 
-## Schritte im Cloudflare-Dashboard
+`endpoint.js` probiert `./api/chat`; antwortet dort JSON oder ein SSE-Stream,
+gewinnt der Proxy und der Geräteschlüssel wird nie angefasst. Bei 404/405/HTML
+fällt es auf den Browser-Direktaufruf zurück. **Derselbe Build läuft dadurch auf
+GitHub Pages und auf Cloudflare** — es gibt kein Zeitloch, in dem der Tutor tot ist.
 
-1. **Workers & Pages → Create → Pages → Connect to Git** → Repo `contest27/lernapp`.
-2. Build-Einstellungen:
-   - Framework preset: **None**
-   - Build command: **leer lassen** (kein Build-Schritt, bewusst)
-   - Build output directory: **`app`**
-   - Root directory: **`/`** (nicht ändern — `functions/` muss im Repo-Wurzelverzeichnis liegen, genau dort steht es)
-3. **Settings → Environment variables → Production** (und Preview, falls du
-   Preview-Deploys nutzt):
-   - `ANTHROPIC_API_KEY` = der Schlüssel, **als Secret** (verschlüsselt), nicht als Plaintext-Variable
-   - `GEMINI_API_KEY` = der Google-Schlüssel (für die Spracherkennung; kann später nachgereicht werden)
-4. **Zugriffsschutz — bitte nicht überspringen.** Ohne Access ist `/api/chat`
-   ein offener Proxy auf deine Rechnung: wer die URL kennt, kann darüber
-   Anthropic-Anfragen stellen. Zwei Wege:
-   - **Cloudflare Access** über die ganze Pages-Domain (wie beim
-     Facharzttrainer). Kostet einen einmaligen Login pro Gerät — für ein Kind
-     eine Hürde, aber die sicherste Variante.
-   - Alternativ vorerst bei GitHub Pages bleiben und den Gerätschlüssel
-     behalten. Der Code kann beides.
-5. Nach dem ersten Deploy: die neue URL (`lernapp.pages.dev` oder deine eigene
-   Domain) **neu auf dem iPad installieren**. Die alte GitHub-Pages-Installation
-   behält ihren eigenen Speicher — vorher im Parent corner ein Backup
-   exportieren und in der neuen Installation einspielen, sonst fängt der
-   Fortschritt bei null an.
+## Was noch von Hand passieren muss
+
+1. **Git-Verbindung reparieren.** Settings → Build: *„This project is
+   disconnected from your Git account."* Auf **Manage** klicken und die
+   Cloudflare-GitHub-App neu autorisieren, sonst deployt kein Push.
+2. **Neu deployen**, damit `wrangler.jsonc` und `worker/index.js` greifen.
+   Danach ist der Worker kein „only static assets" mehr.
+3. **Secrets setzen** (Settings → Variables and secrets — das Feld ist erst nach
+   Schritt 2 aktiv). `ANTHROPIC_API_KEY`, und für die Spracherkennung
+   `GEMINI_API_KEY`. Als **Secret** (verschlüsselt), nicht als Plaintext-Variable.
+   *Die Schlüssel trägt Sebastian selbst ein.*
+4. **Zugriffsschutz** (Tab Access). Ohne den ist `/api/chat` ein offener Proxy
+   auf deine Rechnung, sobald jemand die workers.dev-URL kennt. Cloudflare Access
+   über die ganze Domain ist die sichere Variante — Preis: ein einmaliger Login
+   pro Gerät, für ein Kind eine Hürde. Alternative: vorerst bei GitHub Pages
+   bleiben und den Geräteschlüssel behalten; der Code kann beides.
+5. **Neu aufs iPad installieren** (neue URL). Vorher im Parent corner ein Backup
+   exportieren und drüben einspielen, sonst startet der Fortschritt bei null.
 
 ## Danach im Repo nachziehen
 
-- Parent corner: das Schlüsselfeld kann weg, sobald nur noch Cloudflare läuft.
-- `app/js/qa/endpoint.js`: `directPost`, die `apiKey`-Argumente und diese
-  Fallback-Logik löschen — der Kommentar oben in der Datei sagt es auch.
-- GitHub-Pages-Workflow (`.github/workflows/pages.yml`) entfernen oder
-  deaktivieren, damit nicht zwei Installationen mit getrenntem Fortschritt
-  nebeneinander leben.
+- Schlüsselfeld im Parent corner entfernen.
+- In `app/js/qa/endpoint.js` `directPost`, die `apiKey`-Argumente und die
+  Fallback-Logik löschen (steht auch als Kommentar in der Datei).
+- `.github/workflows/pages.yml` abschalten, damit nicht zwei Installationen mit
+  getrenntem Fortschritt nebeneinanderleben.
 - README/CLAUDE.md auf die neue URL umstellen.
 
-## Was ich dabei geprüft habe
+## Geprüft
 
-- 78/78 Tests, darunter drei neue für `endpoint.js` (404 wird nicht für eine
-  Proxy-Antwort gehalten; ein echter Proxy braucht keinen Schlüssel; ohne
-  beides schlägt es sichtbar fehl statt still).
-- Der Service Worker fasst **kein** Non-GET mehr an. Er hätte sonst den POST an
+- 78/78 Tests; `node --check` auf `worker/index.js`, JSON-Parse auf `wrangler.jsonc`.
+- Der Service Worker fasst **kein** Non-GET mehr an — er hätte sonst den POST an
   `/api/chat` abgefangen: die Cache-API weist POSTs zurück, und der Klon einer
-  gestreamten Antwort hätte den Stream blockieren können. Ein Test hält den
-  Guard fest.
+  gestreamten Antwort hätte den Stream blockieren können. Ein Test hält fest,
+  dass der Guard vor jedem `respondWith` steht.

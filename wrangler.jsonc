@@ -1,0 +1,26 @@
+{
+  // Cloudflare Worker with static assets — the shape the Pages project turned
+  // out to be (dashboard, 2026-08-16). Two consequences drove this file:
+  //
+  //  1. A Worker that has ONLY static assets cannot hold secrets at all — the
+  //     dashboard greys the field out. It needs a real script (`main`) before
+  //     ANTHROPIC_API_KEY / GEMINI_API_KEY can exist.
+  //  2. The Pages `functions/` convention does NOT apply here, so the two
+  //     proxies moved into worker/index.js.
+  //
+  // `run_worker_first` is the part that is easy to get wrong: assets are
+  // normally served BEFORE the script runs, so /api/chat would be answered by
+  // the asset handler (404, or index.html with SPA handling) and the proxy
+  // would never execute. Listing /api/* forces those through the script.
+  "name": "lernapp",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": "app",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}
