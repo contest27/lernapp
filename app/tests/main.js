@@ -67,7 +67,7 @@ async function run() {
   const { makeRng, seedFromString, ri, shuffle } = mods.rng;
   const { addDays, daysBetween } = mods.engineStorage;
   const { newMastery, updateMastery, bandOf, scheduleAfterSession, diagnosticScore } = mods.mastery;
-  const { planSession, nextNewTopic, dueReviewTopics, pickReviewTopics, NEW_TOPIC_TIERS, pacing } = mods.scheduler;
+  const { planSession, nextNewTopic, dueReviewTopics, pickReviewTopics, NEW_TOPIC_TIERS, pacing, SESSION_ITEMS } = mods.scheduler;
   const { checkAnswer, parseNumber, answerText, gcd } = mods.check;
   const { finishSession } = mods.progress;
   const { topics, topicOrder, topicById, journeyMeta } = mods.content;
@@ -426,7 +426,7 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v13'"), 'CACHE_VERSION was not bumped for the number-line and ambiguous-digit fixes');
+    ok(swText.includes("'lernapp-v14'"), 'CACHE_VERSION was not bumped for the one-sitting session length');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
@@ -648,9 +648,21 @@ async function run() {
     slice.diagnosticDone = true;
     const open = planSession(slice, topicOrder, '2026-09-01', makeRng(3), journeyMeta);
     eq(open.kind, 'daily', 'by default a new topic is offered');
+
+    // Before anything is finished there is nothing to review, so the throttle
+    // has to give way: holding the topic back would open a session with no
+    // questions in it at all.
+    const first = planSession(slice, topicOrder, '2026-09-01', makeRng(3), journeyMeta, { allowNewTopic: false });
+    eq(first.kind, 'daily', 'an empty session is never the answer');
+
+    // Once a topic is done, the throttle does its job.
+    slice.completed.push(open.newTopic);
+    slice.mastery[open.newTopic] = { score: 70, attempts: 7, correct: 5, lastSeen: '2026-09-01', due: '2026-09-01', box: 2 };
     const held = planSession(slice, topicOrder, '2026-09-01', makeRng(3), journeyMeta, { allowNewTopic: false });
     eq(held.kind, 'review', 'the throttle turns the day into review');
     eq(held.newTopic, null);
+    slice.completed.pop();
+    delete slice.mastery[open.newTopic];
     const skipped = planSession(slice, topicOrder, '2026-09-01', makeRng(3), journeyMeta, { skip: [open.newTopic] });
     ok(skipped.newTopic && skipped.newTopic !== open.newTopic, 'a deferred topic is passed over');
   });
@@ -1113,6 +1125,42 @@ async function run() {
     }));
     ok(!seedY6FromY5(st), 'nothing recognised means nothing learned');
     ok(!st.maths.y6.diagnosticDone, 'so the check is still owed');
+  });
+
+  test('scheduler: a maths day is ONE sitting of about eleven questions', () => {
+    // Reported from the sofa: a short unit, then a separate review unit, and
+    // every time an argument about whether the second one still counts. The
+    // parts were sized independently — 7 + 4 on a topic day, 10 on a review
+    // day, and 7 alone on the first day of the year, when nothing is due yet.
+    const { seedY6FromY5 } = mods.y5bridge;
+    const { completeTopic, finishSession } = mods.progress;
+    const { dayPlan } = mods.rhythm;
+    const st = shellStorage.defaultState();
+    shellStorage.importY5Backup(st, y5Real());
+    seedY6FromY5(st);
+    const slice = st.maths.y6;
+
+    const sizes = [];
+    for (let i = 0; i < 14; i++) {
+      const day = mods.engineStorage.addDays('2026-09-01', i);
+      const rhythm = dayPlan(slice, day, slice.settings.newTopicEveryDays);
+      const plan = planSession(slice, topicOrder, day, makeRng(seedFromString(day)), journeyMeta,
+        { skip: [], allowNewTopic: rhythm.newTopic });
+      const n = (plan.tiers?.length ?? 0) + plan.review.length;
+      sizes.push({ day, n, kind: plan.kind });
+      if (plan.newTopic) {
+        completeTopic(slice, plan.newTopic, n - 1, plan.tiers.length, day);
+        finishSession(slice, { kind: 'daily', topicId: plan.newTopic, total: n, correct: n - 1, minutes: 9 }, day);
+      } else if (n) {
+        finishSession(slice, { kind: 'review', topicId: null, total: n, correct: n - 1, minutes: 8 }, day);
+      }
+    }
+    for (const s of sizes) {
+      ok(s.n === SESSION_ITEMS, `${s.day} (${s.kind}) is ${s.n} questions, not ${SESSION_ITEMS}`);
+    }
+    // Including the very first day of the curriculum, which has nothing to
+    // review yet and used to be the shortest of the lot.
+    eq(sizes[0].n, SESSION_ITEMS, 'day one carries the whole sitting on the new topic alone');
   });
 
   test('number line: tick labels never overlap', () => {

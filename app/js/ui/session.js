@@ -48,7 +48,9 @@ export function buildSession() {
   } else {
     if (plan.newTopic) {
       const t = topicById(plan.newTopic);
-      for (const tier of NEW_TOPIC_TIERS) items.push({ q: gen(t, tier), topicId: t.id, part: 'practice' });
+      // plan.tiers, not NEW_TOPIC_TIERS: only the plan knows whether a review
+      // block follows, and the ramp is the full eleven when nothing does.
+      for (const tier of (plan.tiers ?? NEW_TOPIC_TIERS)) items.push({ q: gen(t, tier), topicId: t.id, part: 'practice' });
     }
     for (const r of plan.review) {
       items.push({ q: gen(topicById(r.topicId), r.tier), topicId: r.topicId, part: 'review' });
@@ -228,14 +230,22 @@ function qaBox(topic) {
 
 // ------------------------------------------------------------------- item view
 
-const PART_LABEL = { diagnostic: 'Check-up', practice: 'Practise', review: 'Quick review' };
+// ONE title for the whole sitting. It used to switch from 'Practise' to 'Quick
+// review' halfway through, which drew a line across the session: the child read
+// the new heading as "that was the lesson, this is extra", and the second half
+// became something to negotiate about. The counter already runs straight
+// through (8/11), and the 🔁 tag below still says which older topic a question
+// belongs to — that is information, not a boundary.
+function sessionTitle(s) {
+  return s.kind === 'diagnostic' ? 'Check-up' : 'Practise';
+}
 
 function itemView(s) {
   const item = s.items[s.idx];
   if (!item) return endItems(s);
   const q = item.q;
   const wrap = h('div', { class: 'screen' });
-  wrap.append(headerBar(PART_LABEL[item.part], {
+  wrap.append(headerBar(sessionTitle(s), {
     onBack: () => exitSession(s),
     right: h('span', { class: 'count' }, `${s.idx + 1}/${s.items.length}`),
   }));

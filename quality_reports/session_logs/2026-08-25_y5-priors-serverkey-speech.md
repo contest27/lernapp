@@ -151,6 +151,47 @@ Neuer Test misst die Labels aller sechs im Content real gebauten Zahlenstrahlen
 im DOM und verlangt Überlappungsfreiheit. Tests 89 passed / 0 failed,
 `CACHE_VERSION` → `lernapp-v13`.
 
+## Nachtrag 3 — eine Sitzung, elf Fragen
+
+Sebastian: „erst eine ganz kurze Übung, dann eine Wiederholungseinheit — und
+jedes Mal Diskussion, ob wir die Wiederholung noch machen. Besser eine mit so
+um die elf Fragen, wie's vorher war."
+
+**Was dahinterstand** (nachgerechnet, nicht geschätzt): die Teile waren einzeln
+dimensioniert, nicht die Sitzung.
+
+| Tag | vorher | jetzt |
+|---|---|---|
+| Neues Thema, Wiederholung fällig | 7 + 4 = 11 | 7 + 4 = 11 |
+| Neues Thema, nichts fällig (**Tag 1 des Jahres**) | 7 + 0 = **7** | 11 + 0 = 11 |
+| Reiner Wiederholungstag | 10 | 11 |
+| Kein neues Thema erlaubt UND nichts abgeschlossen | **0 (!)** | 11 |
+
+Die letzte Zeile war ein echtes Loch: am Jahresanfang öffnete „Start" an einem
+Englisch-Tag eine Session ohne eine einzige Frage. Der bestehende Test hatte
+genau das als Sollverhalten festgeschrieben (`kind === 'review'`,
+`newTopic === null`) — er ist jetzt auf den neuen Vertrag umgeschrieben.
+
+**Änderungen:**
+- `SESSION_ITEMS = 11` ist die Konstante; `REVIEW_ITEMS_DAILY` leitet sich
+  daraus ab (11 − 7), `REVIEW_ITEMS_ONLY` ist 11.
+- `NEW_TOPIC_TIERS_SOLO` (11 Stufen, gleiche leicht→schwer-Form): die Rampe für
+  ein neues Thema, hinter dem keine Wiederholung kommt. Welche Rampe gilt,
+  entscheidet `planSession` (`plan.tiers`) — nur der Plan weiss, ob noch etwas
+  folgt; `buildSession` liest es nur noch ab.
+- Rettungsregel: ist nichts fällig, nichts abgeschlossen und kein neues Thema
+  erlaubt, wird das nächste Thema trotzdem begonnen. Greift nur vor dem ersten
+  abgeschlossenen Thema.
+- **Die Naht ist weg.** Die Kopfzeile wechselte mitten in der Sitzung von
+  „Practise" auf „Quick review" — genau der Strich, an dem das Kind „das war
+  die Lektion, der Rest ist extra" liest und die Verhandlung anfängt. Jetzt ein
+  Titel für die ganze Sitzung; der Zähler lief ohnehin durch (1/11 … 8/11), und
+  das 🔁-Etikett am einzelnen Item bleibt — das ist Information, keine Grenze.
+
+Verifiziert: 12 simulierte Tage ergeben durchgehend 11, und im UI steht bei
+Item 8/11 weiter „Practise" mit „🔁 Numbers to 10 million" am Item.
+Tests 90 passed / 0 failed, `CACHE_VERSION` → `lernapp-v14`.
+
 ## Ausserhalb dieser Änderung aufgefallen
 
 - `ui/today.js` sagt an einem Englisch-Tag noch „The English lessons are still

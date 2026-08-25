@@ -87,12 +87,33 @@ export function reviewTier(score, rng) {
   return rng() < 0.35 ? 2 : 3;
 }
 
-// Practice ramp for a brand-new topic (7 items, easy -> hard). Shortened from
-// 11 on 2026-08-04: 18-question dailies were too long for the summer pace.
+// ONE SITTING IS ONE UNIT OF ABOUT ELEVEN QUESTIONS (2026-08-25).
+//
+// The parts were sized independently before, and the arithmetic showed: a new
+// topic with review behind it came to 11, a review-only day to 10, but a new
+// topic with nothing yet due came to 7 — and the very first day of Year 6 is
+// exactly that case. Reported from the sofa: a short unit, then a separate
+// review unit, and every time an argument about whether the second one still
+// counts. A child who has finished something has finished; anything after it is
+// negotiable.
+//
+// So the session length is the constant now, and the parts are derived from it.
+// Eleven is the Year 5 number that worked (see the 2026-08-04 note below).
+export const SESSION_ITEMS = 11;
+
+// Practice ramp for a brand-new topic, easy -> hard. Shortened from 11 to 7 on
+// 2026-08-04 because 18-question dailies (11 + 7 review) were too long for the
+// summer pace; the review block behind it brings the day back to SESSION_ITEMS.
 export const NEW_TOPIC_TIERS = [1, 1, 2, 2, 2, 3, 3];
 
-export const REVIEW_ITEMS_DAILY = 4;      // review block appended to a new-topic day
-export const REVIEW_ITEMS_ONLY = 10;      // once the curriculum is finished
+// The ramp for a new topic with NO review to follow it — the first day of a
+// curriculum, or a topic whose predecessors are not due yet. It carries the
+// whole session on its own, so it is the full eleven: the same easy -> hard
+// shape, just with more practice at each step.
+export const NEW_TOPIC_TIERS_SOLO = [1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
+
+export const REVIEW_ITEMS_DAILY = SESSION_ITEMS - NEW_TOPIC_TIERS.length;  // 4
+export const REVIEW_ITEMS_ONLY = SESSION_ITEMS;   // a day with no new topic
 export const MAX_REVIEW_TOPICS = 3;
 
 // Finish-by-target pacing: how many new topics per day are needed to complete
@@ -116,7 +137,17 @@ export function planSession(state, topicOrder, today, rng, meta = null, opts = {
   // skip: topics to pass over when choosing (deferred by the child).
   // allowNewTopic: false turns today into a review day (cadence throttle).
   const { skip = [], allowNewTopic = true } = opts;
-  const newTopic = allowNewTopic ? nextNewTopic(state, topicOrder, meta, skip) : null;
+  let newTopic = allowNewTopic ? nextNewTopic(state, topicOrder, meta, skip) : null;
+
+  // A session must never be empty. At the very start of a curriculum nothing is
+  // completed, so there is nothing to review either — and a day the cadence
+  // marked review-only opened a session with no questions at all. Starting the
+  // next topic is the only useful thing left to do. This can only fire before
+  // the first topic is finished; after that the weakest-topics fallback below
+  // always has material.
+  if (!newTopic && !dueReviewTopics(state, today).length && !state.completed.length) {
+    newTopic = nextNewTopic(state, topicOrder, meta, skip);
+  }
   // On a catch-up day the plan names the second topic up front, so the home card
   // can promise "2 topics today" instead of hiding it behind a button that only
   // appears once the first session is already over.
@@ -140,10 +171,17 @@ export function planSession(state, topicOrder, today, rng, meta = null, opts = {
       .slice()
       .sort((a, b) => state.mastery[a].score - state.mastery[b].score)
       .slice(0, MAX_REVIEW_TOPICS);
-    for (let i = 0; i < 10 && weakest.length; i++) {
+    for (let i = 0; i < REVIEW_ITEMS_ONLY && weakest.length; i++) {
       const topicId = weakest[i % weakest.length];
       review.push({ topicId, tier: reviewTier(state.mastery[topicId].score, rng) });
     }
   }
-  return { kind: newTopic ? 'daily' : 'review', newTopic, extraTopic, review };
+
+  // The ramp is chosen here, not by the screen, because only the plan knows
+  // whether anything follows it. A new topic with no review behind it has to
+  // carry the whole sitting; with review behind it, the two add up to
+  // SESSION_ITEMS between them.
+  const tiers = newTopic ? (review.length ? NEW_TOPIC_TIERS : NEW_TOPIC_TIERS_SOLO) : [];
+
+  return { kind: newTopic ? 'daily' : 'review', newTopic, extraTopic, review, tiers };
 }
