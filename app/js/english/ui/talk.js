@@ -1,9 +1,15 @@
 // TALK — the discussion beat, and the part his teacher actually asked for.
 //
 // He answers out loud where he can; typing is always available beside the
-// microphone rather than behind a failure. Recognition on iPad Safari needs
-// Siri on and a network, and is documented as unreliable, so it is offered,
-// never required.
+// microphone rather than behind a failure.
+//
+// TWO SPEECH PATHS, in this order (2026-08-24). First choice is our own
+// recording transcribed by Gemini (./stt.js): it returns what he actually
+// said, which is the whole point of a spoken answer. Second is the device's
+// own recognition (./speech.js) - it needs Siri on and a network, is
+// documented as unreliable on WebKit, and quietly corrects his English to the
+// nearest plausible word, so it is the fallback, not the road. Third is
+// typing, which is always there.
 //
 // Ported under the Lernapp hub: shell.apiKey/voiceURI/rate replace
 // settings.apiKey/voiceURI/rate, en().settings.speechEnabled replaces
@@ -12,6 +18,8 @@
 
 import { h, store, go, toast, en, registerScreen } from '../../shell/core.js';
 import * as speech from './speech.js';
+import { micButton, recordingAvailable } from './stt.js';
+import { aiReady, sttReady } from '../../qa/endpoint.js';
 import * as audio from './audio.js';
 import * as tts from '../../tts.js';
 import { gradeAnswer, talkScore } from '../qa/talk.js';
@@ -44,6 +52,15 @@ function setAnswer(text) {
   if (box && box.value !== text) box.value = text;
 }
 
+// A transcript ADDS to what is already there rather than replacing it: he may
+// have typed a start, or spoken twice, and losing the first half to the second
+// tap would be its own small betrayal.
+function appendAnswer(text) {
+  const have = (talk.answer || '').replace(/\s+$/, '');
+  setAnswer(have ? `${have} ${text}` : text);
+  talk.spokenLast = true;
+}
+
 function startListening() {
   if (talk.listening) { talk.listening.stop(); return; }
   const btn = host.querySelector('#mic');
@@ -60,11 +77,14 @@ function startListening() {
     .then((text) => { if (text) setAnswer(text); })
     .catch((e) => {
       // A refusal here is not his fault and must not read as one.
+      //
+      // It used to switch en().settings.speechEnabled off for good on
+      // 'not-allowed'/'service-not-allowed', which let a single denied
+      // permission dialog remove the microphone from the app permanently,
+      // recoverable only through the parent corner where nobody would think to
+      // look. A refusal now lasts exactly as long as this attempt; the parent
+      // corner toggle is the only permanent switch.
       toast(e.reason || 'Speech is not working — you can type instead.');
-      en().settings.speechEnabled = e.message === 'not-allowed' || e.message === 'service-not-allowed'
-        ? false
-        : en().settings.speechEnabled;
-      store.save();
       render();
     })
     .finally(() => {
@@ -77,7 +97,10 @@ function startListening() {
 async function submit() {
   const text = (talk.answer || '').trim();
   if (!text) { toast('Say or type something first.'); return; }
-  if (!store.state.shell.apiKey) { toast('Ask a grown-up to set the app up first.'); return; }
+  // aiReady, not the bare device key: on the Cloudflare build the key lives on
+  // the server, and asking the old question meant every answer, spoken or
+  // typed, was refused before it was ever sent (../../qa/endpoint.js).
+  if (!aiReady(store.state.shell.apiKey)) { toast('Ask a grown-up to set the app up first.'); return; }
 
   talk.busy = true;
   render();
@@ -108,6 +131,7 @@ async function submit() {
 }
 
 function next() {
+  releaseMic();
   talk.showing = null;
   if (talk.index < talk.chapter.talk.length - 1) {
     talk.index += 1;
@@ -164,11 +188,39 @@ function finish() {
   go('en-create');
 }
 
+// Which microphone this device gets, best first. The parent-corner switch is
+// the only thing that turns speech off for good.
+function micMode() {
+  if (!en().settings.speechEnabled) return 'none';
+  if (recordingAvailable() && sttReady()) return 'gemini';
+  if (speech.available()) return 'webkit';
+  return 'none';
+}
+
+// A running recording must not outlive the question it belongs to.
+function releaseMic() {
+  talk?.micEl?.cleanup?.();
+  if (talk) talk.micEl = null;
+  if (talk?.listening) { talk.listening.abort(); talk.listening = null; }
+}
+
 function render() {
   if (!host || !talk) return;
   const q = question();
   const showing = talk.showing;
-  const canSpeak = speech.available() && en().settings.speechEnabled;
+  const mode = micMode();
+  // The mic's own status line. The button label already alternates between
+  // 'stop · 12s' and 'hearing you' and is as wide as it can get, so anything
+  // longer than two words belongs here rather than in the button.
+  const micStatus = h('div', { class: 'muted mic-status' }, '');
+  talk.micEl = mode === 'gemini'
+    ? micButton({ status: micStatus, onText: (t) => appendAnswer(t) })
+    : mode === 'webkit'
+      ? h('button', {
+          id: 'mic', class: 'btn ghost wide',
+          onclick: () => { talk.spokenLast = true; startListening(); },
+        }, '🎤 say it')
+      : null;
 
   // replaceChildren() is native, not the h() helper — a bare `? h(...) :
   // null` here would stringify to a literal "null" text node, so the list is
@@ -202,13 +254,9 @@ function render() {
             id: 'answer', class: 'answer', rows: 3, placeholder: 'Type your answer…',
             oninput: (e) => { talk.answer = e.target.value; talk.spokenLast = false; },
           }, talk.answer || ''),
+          talk.micEl ? micStatus : null,
           h('div', { class: 'readbar' },
-            canSpeak
-              ? h('button', {
-                  id: 'mic', class: 'btn ghost wide',
-                  onclick: () => { talk.spokenLast = true; startListening(); },
-                }, '🎤 say it')
-              : null,
+            talk.micEl,
             h('button', { class: 'btn wide', onclick: submit, disabled: talk.busy },
               talk.busy ? 'thinking…' : 'send'),
           ),

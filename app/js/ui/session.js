@@ -15,6 +15,7 @@ import {
   lessonSteps, stepIndex, advanceStep, backStep, isLastStep, canPractise, markCheckedIn,
 } from './lesson.js';
 import { askTutor } from '../qa/tutor.js';
+import { aiReady } from '../qa/endpoint.js';
 import { segmentEl, exampleEl, explanationSheet } from './explain.js';
 import { attachGloss } from './gloss.js';
 import { dayPlan, activeDeferrals } from '../shell/rhythm.js';
@@ -205,7 +206,7 @@ function checkInEl(s, topic) {
 // --------------------------------------------------------------------- Q&A box
 
 function qaBox(topic) {
-  const hasKey = !!store.state.shell.apiKey;
+  const hasKey = aiReady(store.state.shell.apiKey); // server key counts too — qa/endpoint.js
   const chat = createChat({
     ask: hasKey
       ? (q, { onText }) => askTutor({ question: q, topic, apiKey: store.state.shell.apiKey, onText })

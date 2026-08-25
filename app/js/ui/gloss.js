@@ -13,6 +13,7 @@
 import { h, store, cur, logQa } from '../shell/core.js';
 import { lookupGloss, normaliseWord } from '../maths/content/glossary.js';
 import { askTutor, glossSystemPrompt } from '../qa/tutor.js';
+import { aiReady } from '../qa/endpoint.js';
 import * as tts from '../tts.js';
 
 // Letters only: numbers must never become tappable (a gloss on "45" would be
@@ -101,7 +102,8 @@ export async function glossFor(word, sentence) {
   if (cached) return { text: cached, source: 'cache' };
 
   const apiKey = store.state.shell.apiKey;
-  if (!apiKey || !key) return null;
+  // The tutor may be reachable without a key on this device (server proxy).
+  if (!aiReady(apiKey) || !key) return null;
 
   const answer = await askTutor({
     question: `Wort: "${word}"\nSatz: ${sentence}`,
@@ -162,7 +164,7 @@ function openGloss(btn, topicId) {
   glossFor(word, sentence).then((hit) => {
     if (openPop !== pop) return;                 // he moved on already
     if (!hit) {
-      body.replaceChildren(h('p', {}, store.state.shell.apiKey
+      body.replaceChildren(h('p', {}, aiReady(store.state.shell.apiKey)
         ? 'Das Wort kenne ich nicht. Frag Mama oder Papa!'
         : 'Dieses Wort steht nicht in meinem Wörterbuch — und der Tutor ist aus. Frag Mama oder Papa!'));
       place(pop, btn);

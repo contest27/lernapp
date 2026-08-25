@@ -8,6 +8,7 @@
 import { h, store, cur, currentScreen } from '../shell/core.js';
 import { createChat, escapeHtml } from './chat.js';
 import { askTutor, buddySystemPrompt } from '../qa/tutor.js';
+import { aiReady } from '../qa/endpoint.js';
 import { topicById } from '../maths/content/index.js';
 import { dayKey } from '../engine/storage.js';
 
@@ -122,7 +123,10 @@ function openSheet() {
 // Fires after every navigation (registered via onAfterRender). Decides FAB
 // visibility and context from the current screen + active session.
 export function updateBuddy() {
-  const hasKey = !!store.state.shell.apiKey;
+  // Not "is a key on this device": on the Cloudflare build the key is the
+  // server's, and asking the old question hid the buddy on the one host where
+  // it works (qa/endpoint.js).
+  const hasKey = aiReady(store.state.shell.apiKey);
   const screen = currentScreen();
   const allowed = ['home', 'today', 'map', 'session'].includes(screen);
   if (!hasKey || !allowed) { setBuddyVisible(false); clearBuddyContext(); return; }

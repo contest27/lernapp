@@ -1,4 +1,6 @@
-import { mount, go, store, cur, onAfterRender } from './shell/core.js';
+import { mount, go, store, cur, onAfterRender, rerender, currentScreen } from './shell/core.js';
+import { seedY6FromY5 } from './maths/y5-bridge.js';
+import { probeServer } from './qa/endpoint.js';
 import './ui/home.js';
 import './ui/today.js';
 import './ui/map.js';
@@ -17,6 +19,26 @@ mount(document.getElementById('root'));
 // Focused practice is a same-run bonus: never resume it across reloads, so it
 // can never shadow a resumable daily lesson on the next launch.
 if (cur().focusSession) { cur().focusSession = null; store.save(); }
+
+// An imported Year 5 backup replaces the Year 6 warm-up check: its scores seed
+// the topic priors and the check is marked done (maths/y5-bridge.js). Runs on
+// every launch because the device where the import already happened would
+// otherwise still be waiting for a check it must never sit — the function is a
+// no-op the moment the slice has any evidence of its own.
+if (seedY6FromY5(store.state)) store.save();
+
+// Ask the server once whether it holds the API keys, so the AI features can be
+// offered on their real availability instead of on whether a key was typed
+// into this device (app/js/qa/endpoint.js). Fire-and-forget: everything treats
+// an unfinished probe as "available", so nothing waits on it.
+probeServer().then(() => {
+  // The answer decides whether the buddy and the microphone are offered at
+  // all, and it lands a moment after the first paint. Only the launch screen
+  // is redrawn: a later screen is mid-interaction and must not be rebuilt
+  // under him for a status line.
+  if (currentScreen() === 'home') rerender();
+  updateBuddy();
+});
 
 // Global buddy FAB: mounted once outside #root, refreshed on every navigation.
 mountBuddy();

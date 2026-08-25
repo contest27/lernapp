@@ -10,6 +10,8 @@ import { exportJSON, parseImport, importY5Backup, dayKey, wipe } from '../shell/
 import { normaliseWord } from '../maths/content/glossary.js';
 import { subjectOfDay, lastNewTopicDay, activeDeferrals, undeferTopic, DEFER_DAYS } from '../shell/rhythm.js';
 import { testKey } from '../qa/tutor.js';
+import { probeServer, serverStatus } from '../qa/endpoint.js';
+import { seedY6FromY5, seededStrands } from '../maths/y5-bridge.js';
 import * as tts from '../tts.js';
 import { englishSection } from '../english/ui/parent-section.js';
 
@@ -176,20 +178,46 @@ registerScreen('parent', () => {
   wrap.append(pc);
 
   // ---- AI tutor ----
-  const ai = section('AI tutor (optional)');
+  const ai = section('AI tutor');
   ai.append(h('p', { class: 'muted' },
-    'The tutor answers his own questions during explanations, and translates tapped words the built-in '
-    + 'dictionary does not know.'),
+    'The tutor answers his own questions during explanations, translates tapped words the built-in '
+    + 'dictionary does not know, grades the English answers, and runs the forge.'),
     h('p', { class: 'muted' },
-      'On the Cloudflare build the key lives on the server and there is nothing to enter here — leave this empty. '
-      + 'The field is only for the GitHub Pages build, which has no server: there the key is stored on this device '
-      + 'alone and is never part of a backup. Either way, "Test" checks whether the tutor actually answers.'));
+      'On the Cloudflare build the keys live on the server and there is nothing to enter here — leave the field '
+      + 'empty. It is only for the GitHub Pages build, which has no server: there the key is stored on this device '
+      + 'alone and is never part of a backup. "Test" checks whether the tutor actually answers.'));
+
+  // What the server actually holds (./api/health). This line exists because
+  // the app used to decide "is the tutor available?" from the key field below,
+  // which on this host is always empty — and so switched everything off on the
+  // one build where it all works.
+  const serverLine = h('p', { class: 'muted' }, 'Checking the server…');
+  const showServer = () => {
+    const st = serverStatus();
+    if (!st) { serverLine.textContent = 'Checking the server…'; return; }
+    if (st.reason === 'ok') {
+      serverLine.textContent = st.anthropic
+        ? `✅ Server keys: tutor active${st.gemini ? ' · speech active' : ' · speech NOT set up (GEMINI_API_KEY missing)'}. Nothing to enter here.`
+        : '⚠️ The server answers but holds no tutor key (ANTHROPIC_API_KEY missing).';
+    } else if (st.reason === 'signed-out') {
+      // The watch-item from the Pages migration: an expired Cloudflare Access
+      // session looks exactly like a broken app from inside the PWA.
+      serverLine.textContent = '⚠️ Signed out. Open the app in Safari, sign in again, then come back.';
+    } else if (st.reason === 'offline') {
+      serverLine.textContent = 'No connection — the server could not be checked.';
+    } else {
+      serverLine.textContent = 'This build has no server, so a key on this device is needed.';
+    }
+  };
+  showServer();
+  probeServer().then(showServer);
+  ai.append(serverLine);
   const keyIn = h('input', {
     class: 'text-in', type: 'password', placeholder: 'sk-ant-…',
     value: shell.apiKey || '', autocomplete: 'off',
   });
   const status = h('span', { class: 'muted key-status' },
-    shell.apiKey ? 'Key saved on this device.' : 'No key here — fine on the server build; on GitHub Pages the dictionary and chips still work offline.');
+    shell.apiKey ? 'Key saved on this device.' : 'No key on this device — see the line above.');
   const saveBtn = h('button', {
     class: 'btn', onclick: () => {
       shell.apiKey = keyIn.value.trim();
@@ -316,21 +344,31 @@ registerScreen('parent', () => {
     if (!f) return;
     try {
       importY5Backup(store.state, await f.text());
+      // The Year 5 scores ARE the Year 6 warm-up check, and a better one:
+      // seeding here rather than on the next launch means the child sees the
+      // effect immediately (maths/y5-bridge.js).
+      const seeded = seedY6FromY5(store.state);
       store.save();
-      toast(`Year 5 imported — ${store.state.maths.y5.completed.length} topics for review`);
+      toast(seeded
+        ? `Year 5 imported — ${store.state.maths.y5.completed.length} topics, and the warm-up check is done`
+        : `Year 5 imported — ${store.state.maths.y5.completed.length} topics for review`);
       go('parent');
     } catch (e) { toast(e.message); }
   });
   const y5 = store.state.maths.y5;
   bk.append(h('h3', { class: 'sub' }, 'Year 5'),
     h('p', { class: 'muted' },
-      'A PowerMath Trainer (Year 5) backup can be imported here. The scores are stored straight away; the Year 5 '
-      + 'topics themselves become practisable review material in a later update. The Year 5 streak and its summer '
-      + 'deadline are deliberately not carried over.'),
+      'A PowerMath Trainer (Year 5) backup can be imported here. The scores do two jobs at once: they seed the '
+      + 'Year 6 starting levels strand by strand — which is why an imported device never sits the warm-up check — '
+      + 'and the Year 5 topics themselves become practisable review material in a later update. The Year 5 streak '
+      + 'and its summer deadline are deliberately not carried over.'),
     // Spread, never `cond ? el : null` as an append argument: append is the raw
     // DOM method and stringifies a null child into the literal text "null".
     ...(y5 ? [h('p', { class: 'muted' },
-      `✅ Imported: ${y5.completed.length} topics with their scores, waiting for the Year 5 lessons to arrive.`)] : []),
+      `✅ Imported: ${y5.completed.length} topics with their scores. `
+      + (seededStrands(store.state).length
+        ? `They set the Year 6 starting levels in ${seededStrands(store.state).length} strand(s) instead of a warm-up check.`
+        : 'Not enough finished topics to set Year 6 starting levels from.'))] : []),
     h('div', { class: 'row gap' },
       h('button', { class: 'btn subtle', onclick: () => y5In.click() }, '📦 Import Year 5 backup'), y5In));
   wrap.append(bk);

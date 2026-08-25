@@ -44,6 +44,7 @@ async function run() {
       mapScene: await import('../js/ui/map-scene.js'),
       endpoint: await import('../js/qa/endpoint.js'),
       rhythm: await import('../js/shell/rhythm.js'),
+      y5bridge: await import('../js/maths/y5-bridge.js'),
       // English (Wordforge port)
       enVocab: await import('../js/english/engine/vocab.js'),
       enLevel: await import('../js/english/engine/level.js'),
@@ -54,6 +55,7 @@ async function run() {
       enTalk: await import('../js/english/qa/talk.js'),
       enScenes: await import('../js/english/ui/world-scenes.js'),
       enRead: await import('../js/english/ui/read.js'),
+      enStt: await import('../js/english/ui/stt.js'),
     };
   } catch (e) {
     results.push({ name: 'MODULE IMPORTS', ok: false, err: String(e) });
@@ -423,18 +425,19 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v9'"), 'CACHE_VERSION was not bumped for the Wordforge port release');
+    ok(swText.includes("'lernapp-v10'"), 'CACHE_VERSION was not bumped for the Y5-priors + Gemini-speech release');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
       "'./js/ui/lesson.js'", "'./js/ui/gloss.js'", "'./js/ui/explain.js'", "'./js/ui/buddy.js'",
       "'./js/qa/tutor.js'", "'./js/qa/endpoint.js'", "'./js/tts.js'", "'./js/ui/map.js'", "'./js/ui/map-scene.js'",
-      "'./js/ui/svg.js'", "'./js/shell/rhythm.js'",
+      "'./js/ui/svg.js'", "'./js/shell/rhythm.js'", "'./js/maths/y5-bridge.js'",
       "'./js/english/engine/level.js'", "'./js/english/engine/story.js'", "'./js/english/engine/vocab.js'",
       "'./js/english/content/story-index.js'",
       "'./js/english/qa/claude.js'", "'./js/english/qa/genie.js'", "'./js/english/qa/gloss.js'", "'./js/english/qa/talk.js'",
       "'./js/english/ui/home.js'", "'./js/english/ui/read.js'", "'./js/english/ui/talk.js'", "'./js/english/ui/create.js'",
-      "'./js/english/ui/parent-section.js'", "'./js/english/ui/speech.js'", "'./js/english/ui/audio.js'",
+      "'./js/english/ui/parent-section.js'", "'./js/english/ui/speech.js'", "'./js/english/ui/stt.js'",
+      "'./js/english/ui/audio.js'",
       "'./js/english/ui/world-scenes.js'",
       "'./data/story/signal/signal-01.json'", "'./data/story/signal/signal-12.json'"]) {
       ok(swText.includes(p), 'sw.js ASSETS missing ' + p);
@@ -993,6 +996,176 @@ async function run() {
       window.fetch = real;
       resetProxyProbe();
     }
+  });
+
+
+  // ------------------------------------------------------- Year 5 -> Year 6
+
+  // A backup with real Year 5 topic ids, one strong strand and one weak one.
+  function y5Real({ strong = 90, weak = 20 } = {}) {
+    return JSON.stringify({
+      app: 'powermath-trainer',
+      state: {
+        version: 1,
+        settings: { name: 'Kid' },
+        mastery: {
+          'u01-pv100k': { score: strong }, 'u02-pv1m': { score: strong },   // place
+          'u03-column': { score: weak }, 'u07-division': { score: weak },   // -> fourops
+          'u08-equivalent': { score: 60 },                                  // fractions
+          'u15-position': { score: 75 },                                    // -> position
+        },
+        stars: {},
+        completed: ['u01-pv100k', 'u02-pv1m', 'u03-column', 'u07-division', 'u08-equivalent', 'u15-position'],
+        diagnosticDone: true,
+        history: [], attempts: [], qaLog: [],
+      },
+    });
+  }
+
+  test('y5-bridge: an imported Year 5 backup seeds the Year 6 priors and retires the warm-up check', () => {
+    const { seedY6FromY5, priorFromY5 } = mods.y5bridge;
+    const st = shellStorage.defaultState();
+    shellStorage.importY5Backup(st, y5Real());
+    ok(!st.maths.y6.diagnosticDone, 'the import alone must not touch the y6 slice');
+    ok(seedY6FromY5(st), 'seeding runs when there is a y5 slice and no y6 evidence');
+
+    const y6 = st.maths.y6;
+    ok(y6.diagnosticDone, 'the warm-up check is retired');
+    for (const t of topics) ok(y6.mastery[t.id], `every topic gets a prior: ${t.id}`);
+    const place = y6.mastery[topics.find((t) => t.strand === 'place').id].score;
+    const fourops = y6.mastery[topics.find((t) => t.strand === 'fourops').id].score;
+    ok(place > fourops, 'a strong Year 5 strand starts above a weak one');
+    eq(place, priorFromY5(90), 'place comes straight from the Year 5 mean');
+    ok(place <= 85, 'no topic starts in the secure band before it has been practised');
+    ok(fourops >= 30, 'and no topic starts below the floor');
+  });
+
+  test('y5-bridge: shrinks towards the middle and never overwrites real Year 6 work', () => {
+    const { seedY6FromY5, priorFromY5 } = mods.y5bridge;
+    eq(priorFromY5(50), 50, 'a middling Year 5 stays middling');
+    ok(priorFromY5(100) < 100, 'a perfect Year 5 is still not a mastered Year 6 topic');
+    ok(priorFromY5(0) > 0, 'and a bad Year 5 leaves room to fall');
+
+    const st = shellStorage.defaultState();
+    shellStorage.importY5Backup(st, y5Real());
+    ok(seedY6FromY5(st), 'first run seeds');
+    ok(!seedY6FromY5(st), 'second run is a no-op: idempotent, so it can run on every launch');
+
+    // Evidence of any kind blocks it, even before the check is marked done.
+    const fresh = shellStorage.defaultState();
+    shellStorage.importY5Backup(fresh, y5Real());
+    fresh.maths.y6.attempts.push({ d: '2026-09-01', t: 'u01-pv10m', tier: 1, ok: 1 });
+    ok(!seedY6FromY5(fresh), 'a single answered question is worth more than a borrowed prior');
+  });
+
+  test('y5-bridge: every implemented Year 6 strand can be reached from Year 5, or is knowingly new', () => {
+    const { Y5_TO_Y6_STRAND, Y5_TOPIC_STRAND } = mods.y5bridge;
+    // Year 6 strands with no Year 5 ancestor start neutral ON PURPOSE. This
+    // test exists so that adding 6B/6C topics forces a decision here rather
+    // than silently seeding them with 50.
+    const NEW_IN_Y6 = ['algebra', 'ratio', 'problem'];
+    const reachable = new Set(Object.values(Y5_TO_Y6_STRAND).flat());
+    for (const strand of new Set(topics.map((t) => t.strand))) {
+      ok(reachable.has(strand) || NEW_IN_Y6.includes(strand),
+        `Y6 strand "${strand}" is neither mapped from Year 5 nor listed as new`);
+    }
+    for (const y5strand of new Set(Object.values(Y5_TOPIC_STRAND))) {
+      ok(Y5_TO_Y6_STRAND[y5strand], `Y5 strand "${y5strand}" has no Year 6 target`);
+    }
+  });
+
+  test('y5-bridge: a backup of unknown topics leaves the warm-up check standing', () => {
+    const { seedY6FromY5 } = mods.y5bridge;
+    const st = shellStorage.defaultState();
+    shellStorage.importY5Backup(st, JSON.stringify({
+      app: 'powermath-trainer',
+      state: {
+        version: 1, settings: {}, mastery: { 'not-a-topic': { score: 80 } },
+        stars: {}, completed: ['not-a-topic'], diagnosticDone: true,
+        history: [], attempts: [], qaLog: [],
+      },
+    }));
+    ok(!seedY6FromY5(st), 'nothing recognised means nothing learned');
+    ok(!st.maths.y6.diagnosticDone, 'so the check is still owed');
+  });
+
+  test('diagnostic: every item stays Year 5 revision', () => {
+    // The check runs before a single Year 6 lesson. Three items used to ask
+    // Year 6 material (7-digit place value, BIDMAS, reflection into the
+    // negative quadrants); these are the guards that keep them out.
+    for (const seed of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
+      for (const q of mods.content.diagnosticItems(makeRng(seedFromString(seed)))) {
+        const texts = [q.prompt, ...(q.options ?? []).map(String)];
+        for (const t of texts) {
+          ok(!/\d{1,3}(?:,\d{3}){2,}/.test(t), `a 7-digit number is Year 6: ${t}`);
+          ok(!/\(\s*-/.test(t), `negative coordinates are Year 6: ${t}`);
+        }
+        ok(!(/\+/.test(q.prompt) && /×/.test(q.prompt)),
+          `mixing + and × in one expression is BIDMAS, which is Year 6: ${q.prompt}`);
+      }
+    }
+  });
+
+  // ------------------------------------------------- server keys and speech
+
+  test('endpoint: readHealth tells "no server" from "signed out" from "ready"', () => {
+    const { readHealth } = mods.endpoint;
+    eq(readHealth({ ok: true, status: 200, contentType: 'application/json', body: { ok: true, anthropic: true, gemini: true } }),
+      { anthropic: true, gemini: true, reason: 'ok' });
+    eq(readHealth({ ok: true, status: 200, contentType: 'application/json', body: { ok: true, anthropic: true, gemini: false } }),
+      { anthropic: true, gemini: false, reason: 'ok' });
+    // GitHub Pages: its 404 page.
+    eq(readHealth({ ok: false, status: 404, contentType: 'text/html' }).reason, 'no-server');
+    // Cloudflare Access once the month is up: the login page, not our JSON.
+    eq(readHealth({ ok: true, status: 200, contentType: 'text/html', redirected: true }).reason, 'signed-out');
+  });
+
+  await atest('endpoint: the server key alone makes the AI features available', async () => {
+    const { probeServer, resetProxyProbe, aiReady, sttReady, usingProxy } = mods.endpoint;
+    const real = window.fetch;
+    try {
+      resetProxyProbe();
+      ok(aiReady(''), 'before the probe answers, features are offered rather than hidden');
+      window.fetch = async () => new Response(JSON.stringify({ ok: true, anthropic: true, gemini: true }),
+        { status: 200, headers: { 'content-type': 'application/json' } });
+      await probeServer();
+      ok(aiReady(''), 'no key on this device, and the tutor is still available');
+      ok(sttReady(), 'speech too');
+      ok(usingProxy(), 'and postMessages can skip its own probe');
+
+      resetProxyProbe();
+      window.fetch = async () => new Response('<!doctype html>', { status: 404, headers: { 'content-type': 'text/html' } });
+      await probeServer();
+      ok(!aiReady(''), 'a static host with no key really does mean no tutor');
+      ok(aiReady('sk-typed-here'), 'unless a key was typed on the device');
+      ok(!sttReady(), 'speech has no device-key fallback at all');
+    } finally {
+      window.fetch = real;
+      resetProxyProbe();
+    }
+  });
+
+  test('stt: the WAV the recorder hands to Gemini is well formed', () => {
+    const { float32ToInt16, pcmToWavBlob, parseTranscript, sttPrompt } = mods.enStt;
+
+    const pcm = float32ToInt16(new Float32Array([0, 1, -1, 0.5]));
+    eq(pcm.length, 8, 'two bytes per sample');
+    const v = new DataView(pcm.buffer);
+    eq(v.getInt16(0, true), 0);
+    eq(v.getInt16(2, true), 32767, 'full scale up');
+    eq(v.getInt16(4, true), -32768, 'full scale down');
+
+    const blob = pcmToWavBlob(pcm, 16000);
+    eq(blob.type, 'audio/wav');
+    eq(blob.size, 44 + pcm.byteLength, 'a 44-byte header and nothing else');
+
+    eq(parseTranscript({ candidates: [{ content: { parts: [{ text: 'the door ' }, { text: 'was open' }] } }] }),
+      'the door was open', 'parts are joined, not just the first one');
+    eq(parseTranscript({}), '', 'a refusal or an empty answer is an empty string, never a crash');
+
+    const prompt = sttPrompt();
+    ok(/do not correct grammar/i.test(prompt) && /word for word/i.test(prompt),
+      'the prompt must forbid tidying up his English, which is the whole point');
   });
 
   report();

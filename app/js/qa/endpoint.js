@@ -16,13 +16,18 @@
 
 const DIRECT_URL = 'https://api.anthropic.com/v1/messages';
 const PROXY_URL = './api/chat';
+const HEALTH_URL = './api/health';
 const API_VERSION = '2023-06-01';
 
 // Cached across calls: the answer cannot change within a page load, and the
 // probe would otherwise cost a round trip on every single question.
 let proxyAvailable = null;
 
-export function resetProxyProbe() { proxyAvailable = null; }
+// What the server says it holds, from ./api/health. null until the probe
+// answers; every reader treats that as "available" (see aiReady).
+let server = null;
+
+export function resetProxyProbe() { proxyAvailable = null; server = null; }
 
 // A Pages Function answers with JSON or an SSE stream. GitHub Pages answers a
 // POST to a missing path with its 404 HTML page, and some static hosts answer
@@ -86,3 +91,75 @@ export async function postMessages(body, { apiKey = '', signal = null } = {}) {
 // True when this build is talking to a server proxy — the parent corner uses it
 // to explain whether a key is needed at all.
 export function usingProxy() { return proxyAvailable === true; }
+
+// ------------------------------------------------------------------ health
+//
+// Whether the AI features may be offered at all used to be answered with "is
+// there a key on this device?" — which on the Cloudflare build is always no,
+// because the key lives on the server. That single wrong question switched off
+// the tutor, both dictionaries, the forge and the answer grader on the one
+// host where they actually work. ./api/health answers the right one.
+
+// Classify the health answer. Pure and exported for the tests: the three
+// no-server cases are told apart because they need three different sentences
+// in the parent corner.
+export function readHealth({ ok, status, contentType = '', redirected = false, body = null }) {
+  if (!ok || !contentType.includes('json')) {
+    // Both no-server cases answer with HTML, so the HTML alone decides nothing.
+    // GitHub Pages answers a missing path with its 404 page: the path is not
+    // there. An expired Cloudflare Access session answers 200 (or a redirect)
+    // with the login page: the path IS there and the app is simply signed out —
+    // the watch-item from the Pages migration, where the keys are fine and the
+    // only fix is signing in again in Safari.
+    const signedOut = redirected || status === 302 || (ok && contentType.includes('html'));
+    return { anthropic: false, gemini: false, reason: signedOut ? 'signed-out' : 'no-server' };
+  }
+  return { anthropic: !!body?.anthropic, gemini: !!body?.gemini, reason: 'ok' };
+}
+
+// One GET, once per page load. Never throws — a dead network is just another
+// answer.
+export async function probeServer() {
+  if (server) return server;
+  try {
+    const res = await fetch(HEALTH_URL, { headers: { accept: 'application/json' } });
+    let body = null;
+    try { body = await res.json(); } catch { /* not JSON — readHealth decides */ }
+    server = readHealth({
+      ok: res.ok,
+      status: res.status,
+      contentType: res.headers.get('content-type') || '',
+      redirected: res.redirected,
+      body,
+    });
+  } catch {
+    server = { anthropic: false, gemini: false, reason: 'offline' };
+  }
+
+  // Feed the per-call probe: a confirmed server key means postMessages can skip
+  // its own round trip, and a confirmed static host means it must not try. An
+  // expired session or a dead network says nothing about the host, so the
+  // per-call probe keeps its own counsel there.
+  if (server.anthropic) proxyAvailable = true;
+  else if (server.reason === 'no-server') proxyAvailable = false;
+
+  return server;
+}
+
+// The probe's verdict, or null while it is still out.
+export function serverStatus() { return server; }
+
+// May the app offer an AI feature? A key typed on this device always counts;
+// otherwise the server decides. An unfinished probe counts as YES on purpose:
+// it resolves in milliseconds, and the failure mode we want is an honest error
+// message, never a feature that quietly is not there.
+export function aiReady(apiKey = '') {
+  if (apiKey) return true;
+  return server ? server.anthropic : true;
+}
+
+// Same question for Gemini speech-to-text (functions/api/stt.js). There is no
+// device-key fallback here: the Gemini key was never a client-side option.
+export function sttReady() {
+  return server ? server.gemini : true;
+}

@@ -72,5 +72,6 @@ exists.
 B0 scaffold ✓ → B1 Y6 spine ✓ → B2 content 6A ✓ (6B/6C open) → B3 diagnostic ✓
 → practice UI ✓ → map ✓ → parent corner ✓ → B5 Wordforge ✓ → B6 deploy ✓
 (Cloudflare Pages 2026-08-19) →
-open: 6B/6C, B4 Y5 topic modules, Gemini speech module.
+B7 Y5 priors + server-key gates + Gemini speech ✓ (2026-08-25) —
+open: 6B/6C, B4 Y5 topic modules.
 Plan of record: `~/.claude/plans/inherited-crafting-lantern.md`.

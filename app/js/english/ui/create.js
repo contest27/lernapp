@@ -11,6 +11,7 @@
 // replaces store.state for everything else.
 
 import { h, store, go, toast, SPARK, en, registerScreen } from '../../shell/core.js';
+import { aiReady } from '../../qa/endpoint.js';
 import { mountScene } from './world-scenes.js';
 import { judge } from '../qa/genie.js';
 import { record, normalise } from '../engine/vocab.js';
@@ -29,7 +30,8 @@ async function cast() {
   const text = (forge.prompt || '').trim();
   if (text.length < 3) { toast('Tell the world what to do.'); return; }
   if (en().tokens < 1) { toast('No sparks left — read another chapter.'); return; }
-  if (!store.state.shell.apiKey) { toast('Ask a grown-up to set the app up first.'); return; }
+  // The key is normally the server's, not this device's — see qa/endpoint.js.
+  if (!aiReady(store.state.shell.apiKey)) { toast('Ask a grown-up to set the app up first.'); return; }
 
   forge.busy = true;
   render();

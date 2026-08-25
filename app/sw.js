@@ -1,7 +1,7 @@
 // Precaching service worker. Bump CACHE_VERSION on every deploy so clients
 // pick up new content; old caches are cleared on activate.
 
-const CACHE_VERSION = 'lernapp-v9';
+const CACHE_VERSION = 'lernapp-v10';
 
 // English (Wordforge) chapter narration MP3s live in their own long-lived
 // cache that SURVIVES CACHE_VERSION bumps: they are addressed by chapter
@@ -26,6 +26,7 @@ const ASSETS = [
   './js/shell/storage.js',
   './js/shell/core.js',
   './js/shell/rhythm.js',
+  './js/maths/y5-bridge.js',
   './js/ui/home.js',
   './js/ui/parent.js',
   './js/ui/today.js',
@@ -65,6 +66,7 @@ const ASSETS = [
   './js/english/ui/create.js',
   './js/english/ui/parent-section.js',
   './js/english/ui/speech.js',
+  './js/english/ui/stt.js',
   './js/english/ui/audio.js',
   './js/english/ui/world-scenes.js',
   './data/story/signal/signal-01.json',
@@ -111,6 +113,12 @@ self.addEventListener('fetch', (e) => {
 
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return; // third-party calls go straight to the network
+
+  // Our own API is never cached, in either direction. /api/health is the first
+  // GET among them (does the server hold the keys?), and a cached answer is
+  // worse than none: it would freeze at whatever was true on the first load
+  // and, offline, keep reporting a cheerful "ok" from last week.
+  if (url.pathname.includes('/api/')) return;
 
   if (e.request.mode === 'navigate') {
     const isShell = url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');

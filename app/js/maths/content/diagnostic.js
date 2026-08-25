@@ -4,6 +4,18 @@
 // that strand), so every strand needs at least two items or its prior is
 // noise. Grows with the books: 6B/6C strands get their items when their
 // topics land.
+//
+// EVERY ITEM IS YEAR 5 REVISION, and must stay that way (2026-08-24). The
+// check runs before he has been taught a single Year 6 lesson, so asking Year
+// 6 material measures nothing but whether his class has got there yet. Three
+// items were Year 6 and were replaced: seven-digit place value, BIDMAS
+// (6A u03-order-ops) and reflection into the negative quadrants (6A
+// u06-position). The strand a question belongs to is the Year 6 strand it
+// seeds — the CONTENT is the Year 5 ground that strand builds on.
+//
+// It is also the second-best source of priors now. A device that imported a
+// PowerMath-Trainer backup never sees this check at all: a year of Year 5
+// scores beats twelve questions, and maths/y5-bridge.js uses them instead.
 
 import { num, tf, mcFrom, fr, fmt, ri, pick } from './gen.js';
 import { pvGrid, barModel, fracBar, coordGrid } from './vis.js';
@@ -14,12 +26,14 @@ export function diagnosticItems(rng) {
 
   // --- place value (3)
   {
-    const n = ri(rng, 1200000, 8900000);
+    // Six digits, not seven: numbers to 1,000,000 are Year 5 (u02-pv1m);
+    // 10,000,000 is the first Year 6 lesson he has not had yet.
+    const n = ri(rng, 120000, 890000);
     const s = String(n);
     let pos = ri(rng, 0, 3);
     while (s[pos] === '0') pos = (pos + 1) % 4;
     const digit = Number(s[pos]);
-    const value = digit * 10 ** (6 - pos);
+    const value = digit * 10 ** (5 - pos);
     add('place', num(`What is the value of the digit ${digit} in ${fmt(n)}?`, value, { tier: 1, svg: pvGrid(n) }));
   }
   {
@@ -45,8 +59,18 @@ export function diagnosticItems(rng) {
     add('fourops', num(`Work out ${fmt(q * b)} ÷ ${b}.`, q, { tier: 2 }));
   }
   {
-    const a = ri(rng, 3, 9), b = ri(rng, 2, 9), c = ri(rng, 2, 9);
-    add('fourops', num(`Work out ${a} + ${b} × ${c}.`, a + b * c, { tier: 2 }));
+    // Factors, not order of operations. BIDMAS is Year 6 (6A u03-order-ops)
+    // and was the clearest case of asking for something not yet taught;
+    // factors and factor pairs are Year 5 (u05-factors).
+    const f = pick(rng, [3, 4, 6, 8]);
+    const n = f * pick(rng, [4, 5, 6, 7]);
+    const wrong = [f + 1, f - 1, f + 3].filter((x) => x > 1 && n % x !== 0);
+    while (wrong.length < 3) {
+      const cand = ri(rng, 2, 19);
+      if (n % cand !== 0 && !wrong.includes(cand)) wrong.push(cand);
+    }
+    add('fourops', mcFrom(rng, `Which of these numbers is a factor of ${n}?`,
+      String(f), wrong.slice(0, 3).map(String), { tier: 2 }));
   }
 
   // --- fractions (3)
@@ -79,9 +103,20 @@ export function diagnosticItems(rng) {
       }));
   }
   {
-    const x = ri(rng, 1, 8), y = ri(rng, 1, 8);
-    add('position', mcFrom(rng, `Point A is at (${x}, ${y}). Reflect it in the x-axis. Where does it land?`,
-      `(${x}, ${-y})`, [`(${-x}, ${y})`, `(${-x}, ${-y})`, `(${y}, ${x})`], { tier: 2 }));
+    // Translation in the first quadrant, not reflection into the negative
+    // ones. Four quadrants are Year 6 (6A u06-position); translating a point
+    // right and up is Year 5 (u15-position).
+    const x = ri(rng, 1, 5), y = ri(rng, 1, 5);
+    const dx = ri(rng, 1, 4);
+    // Different steps, or the swapped-deltas distractor would BE the answer and
+    // mcFrom would drop it, leaving a three-option question.
+    let dy = ri(rng, 1, 4);
+    if (dy === dx) dy = dx === 4 ? 1 : dx + 1;
+    add('position', mcFrom(rng, `Point A is at (${x}, ${y}). It moves ${dx} right and ${dy} up. Where does it land?`,
+      `(${x + dx}, ${y + dy})`,
+      // Swapped the two steps, forgot to go right, forgot to go up. All three
+      // stay in the first quadrant: negative coordinates are Year 6.
+      [`(${x + dy}, ${y + dx})`, `(${x}, ${y + dy})`, `(${x + dx}, ${y})`], { tier: 2 }));
   }
 
   return items;

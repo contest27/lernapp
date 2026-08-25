@@ -10,6 +10,7 @@
 // result is cached forever, so the same word is free the second time.
 
 import { callClaudeJSON, MODEL_FAST } from './claude.js';
+import { aiReady } from '../../qa/endpoint.js';
 import { normalise } from '../engine/vocab.js';
 
 export function systemPrompt() {
@@ -36,7 +37,9 @@ export async function lookup({ word, sentence, chapter, state, apiKey }) {
   const cached = state.glossCache?.[w];
   if (cached) return { ...cached, source: 'cache' };
 
-  if (!apiKey) return { de: null, en: null, source: 'none' };
+  // aiReady, not the bare key: on the Cloudflare build the key is the
+  // server's and this device has none (../../qa/endpoint.js).
+  if (!aiReady(apiKey)) return { de: null, en: null, source: 'none' };
 
   try {
     const raw = await callClaudeJSON({

@@ -17,6 +17,8 @@ import { store, en, toast } from '../../shell/core.js';
 import { summary } from '../engine/vocab.js';
 import { trend } from '../engine/level.js';
 import * as speech from './speech.js';
+import { recordingAvailable } from './stt.js';
+import { sttReady } from '../../qa/endpoint.js';
 
 function stat(h, label, value, hint) {
   return h('div', { class: 'stat' },
@@ -83,12 +85,27 @@ function promptSection(h, section) {
   return body;
 }
 
+// Which of the two microphones this device will actually use. Worth naming:
+// they behave differently, and that difference is why the Gemini one exists —
+// Apple's dictation corrects his English before anyone can hear it.
+function micNote() {
+  if (recordingAvailable() && sttReady()) {
+    return 'Speaking uses our own recording, transcribed on the server (Gemini): it writes down exactly what '
+      + 'he says, mistakes included. Typing is always available beside it.';
+  }
+  if (speech.available()) {
+    return 'Speaking falls back to the dictation built into this device: it needs Siri switched on, and it '
+      + 'quietly corrects his English. Typing is always available beside it.';
+  }
+  return 'Speech is NOT available here — TALK will be typed.';
+}
+
 function settingsSection(h, section) {
   const s = en().settings;
   const body = section('English — settings');
   body.append(
     h('label', { class: 'field' },
-      h('span', {}, 'Gemini API key (optional — unused until image trophies arrive)'),
+      h('span', {}, 'Gemini API key (optional — image trophies only; speech uses the server key)'),
       h('input', {
         type: 'password', value: s.geminiKey ?? '', autocomplete: 'off',
         oninput: (e) => { s.geminiKey = e.target.value.trim(); store.save(); },
@@ -105,10 +122,10 @@ function settingsSection(h, section) {
         type: 'checkbox', checked: s.speechEnabled,
         onchange: (e) => { s.speechEnabled = e.target.checked; store.save(); toast('Saved'); },
       })),
-    h('div', { class: 'note' },
-      speech.available()
-        ? 'Speech recognition is available on this device.'
-        : 'Speech recognition is NOT available here — TALK will be typed.'),
+    // The checkbox above is the ONLY permanent way to turn speech off. A
+    // refused microphone used to flip it silently, which took the button away
+    // for good (see the note in ui/talk.js); a refusal now lasts one attempt.
+    h('div', { class: 'note' }, micNote()),
   );
   return body;
 }
