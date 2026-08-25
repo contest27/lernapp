@@ -425,7 +425,7 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v10'"), 'CACHE_VERSION was not bumped for the Y5-priors + Gemini-speech release');
+    ok(swText.includes("'lernapp-v11'"), 'CACHE_VERSION was not bumped for the English-day card copy fix');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",

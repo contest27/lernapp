@@ -85,7 +85,7 @@ registerScreen('today', () => {
   } else if (rhythm.subject === 'english') {
     card.append(h('h2', {}, 'English day 📚'),
       h('p', {}, 'Today is an English day — maths has the day off so the year lasts.'),
-      h('p', { class: 'muted' }, 'The English lessons are still being built. Until they arrive, a short maths review is here if you want one.'));
+      h('p', { class: 'muted' }, 'Tap 🏫 Home and open English for today\'s chapter. A short maths review is here too, if you want one.'));
   } else if (rhythm.daysToNext > 0) {
     card.append(h('h2', {}, 'Review day 💪'),
       h('p', {}, 'No new topic today — this one keeps what you have learned sharp.'),
