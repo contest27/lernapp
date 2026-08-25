@@ -123,6 +123,34 @@ Cloudflare-Token liegt bewusst nicht im Repo. Prüfmarke für den angemeldeten
 Browser: `/api/health` existiert erst seit `431ae83` — ein 404 dort heisst
 „Build noch nicht da".
 
+## Nachtrag 2 — zwei Inhaltsfehler vom Gerät gemeldet
+
+**1. Mehrdeutige Stellenwert-Frage.** „Zahlen kann man nicht lesen … welchen
+Wert hat die Ziffer fünf, aber die Fünf taucht zwei- oder dreimal auf."
+Reproduziert beim ersten Versuch: *What is the value of the digit 5 in
+556,539?* — drei Fünfer, drei Antworten. Der Generator wählte eine POSITION und
+benannte dann die Ziffer, die dort zufällig stand. Betroffen waren
+`content/diagnostic.js` **und** das Y6-Thema `u01-pv10m` selbst.
+Neu: `unambiguousDigitPositions()` in `gen.js` — eine Ziffer darf nur beim
+Namen genannt werden, wenn sie genau einmal vorkommt (Nullen fällt derselbe
+Filter mit weg, der vorher als `digit === 0`-Retry dastand). Test sweept ALLE
+Generatoren, nicht nur die zwei betroffenen.
+
+**2. Unlesbarer Zahlenstrahl.** Der eigentliche „Zahlen kann man nicht lesen"-
+Fall, und messbar: `numberLine(3000000, 4000000, {step: 100000})` erzeugte elf
+Beschriftungen à 46 px auf 28,8 px Raster — **17 px Überlappung pro Label**
+(im Browser mit `getComputedTextLength` nachgemessen). Steckt in der Erklärung
+des allerersten Y6-Themas. `vis.js` dünnt die Labels jetzt aus statt sie zu
+kürzen (die Lektion handelt vom LESEN grosser Zahlen, „3.6M" würde genau das
+umgehen), und der Schritt wird auf einen Teiler der Strahllänge gerundet, damit
+beide Enden beschriftet bleiben: 3,000,000 | 3,500,000 | 4,000,000. Alle Ticks
+bleiben stehen. `vis.js` ist ein Sync-File — DIVERGED-Notiz im Kopf, wie in
+`scheduler.js` (Y5 ist eingefroren, es gibt kein Upstream mehr).
+
+Neuer Test misst die Labels aller sechs im Content real gebauten Zahlenstrahlen
+im DOM und verlangt Überlappungsfreiheit. Tests 89 passed / 0 failed,
+`CACHE_VERSION` → `lernapp-v13`.
+
 ## Ausserhalb dieser Änderung aufgefallen
 
 - `ui/today.js` sagt an einem Englisch-Tag noch „The English lessons are still

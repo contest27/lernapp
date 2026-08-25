@@ -17,7 +17,7 @@
 // PowerMath-Trainer backup never sees this check at all: a year of Year 5
 // scores beats twelve questions, and maths/y5-bridge.js uses them instead.
 
-import { num, tf, mcFrom, fr, fmt, ri, pick } from './gen.js';
+import { num, tf, mcFrom, fr, fmt, ri, pick, unambiguousDigitPositions } from './gen.js';
 import { pvGrid, barModel, fracBar, coordGrid } from './vis.js';
 
 export function diagnosticItems(rng) {
@@ -28,10 +28,17 @@ export function diagnosticItems(rng) {
   {
     // Six digits, not seven: numbers to 1,000,000 are Year 5 (u02-pv1m);
     // 10,000,000 is the first Year 6 lesson he has not had yet.
-    const n = ri(rng, 120000, 890000);
-    const s = String(n);
-    let pos = ri(rng, 0, 3);
-    while (s[pos] === '0') pos = (pos + 1) % 4;
+    // The digit must occur exactly once, or the question has several answers
+    // ("the digit 5 in 556,539" had three). Draw until the number offers one in
+    // the top four columns; the fallback keeps this terminating no matter what
+    // the rng does.
+    let n = 483920, s = '483920', pos = 0;
+    for (let tries = 0; tries < 40; tries += 1) {
+      const cand = ri(rng, 120000, 890000);
+      const cs = String(cand);
+      const spots = unambiguousDigitPositions(cs, [0, 1, 2, 3]);
+      if (spots.length) { n = cand; s = cs; pos = pick(rng, spots); break; }
+    }
     const digit = Number(s[pos]);
     const value = digit * 10 ** (5 - pos);
     add('place', num(`What is the value of the digit ${digit} in ${fmt(n)}?`, value, { tier: 1, svg: pvGrid(n) }));

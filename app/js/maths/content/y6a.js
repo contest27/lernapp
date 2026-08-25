@@ -8,7 +8,7 @@
 // y6a-frac.js. Composed here so the book array keeps unit order (and with it
 // strand contiguity).
 
-import { num, tf, order, mcFrom, fmt, ri, pick, distinctInts, scenario } from './gen.js';
+import { num, tf, order, mcFrom, fmt, ri, pick, distinctInts, scenario, unambiguousDigitPositions } from './gen.js';
 import { pvGrid, numberLine, barModel } from './vis.js';
 import { topics6aU3, topics6aU6 } from './y6a-u3u6.js';
 import { topics6aFrac } from './y6a-frac.js';
@@ -68,9 +68,14 @@ const topics6aU1U2 = [
       if (tier === 1) {
         if (rng() < 0.5) {
           const n = makeNum(rng, 7);
-          const pos = ri(rng, 0, 6);
+          // Only a digit that occurs ONCE can be named by its face value —
+          // "the digit 5 in 5,565,391" would have three answers. Zeros are
+          // excluded by the same helper (a place holder is worth nothing to
+          // ask about), which is what the old `digit === 0` retry did.
+          const spots = unambiguousDigitPositions(String(n));
+          if (!spots.length) return this.gen(rng, tier);
+          const pos = pick(rng, spots);
           const digit = Number(String(n)[pos]);
-          if (digit === 0) return this.gen(rng, tier);
           const value = digit * 10 ** (6 - pos);
           return num(`What is the <b>value</b> of the digit ${digit} in ${fmt(n)}?`, value, {
             tier, svg: pvGrid(n),

@@ -77,6 +77,24 @@ export function scenario(rng, key, builders) {
   return builders[deck.last](rng);
 }
 
+// Place-value helpers ----------------------------------------------------------
+
+// Which positions in a number may be named BY THEIR DIGIT without ambiguity.
+//
+// "What is the value of the digit 5 in 556,539?" is not a question — it has
+// three answers. A digit may only be referred to by its own face value if it
+// occurs exactly once in the number. Zeros are excluded as well: a zero is a
+// place holder, and asking what it is worth teaches the wrong idea.
+//
+// Reported from the device 2026-08-25; the generator had been picking a
+// position and then naming the digit that happened to sit there.
+export function unambiguousDigitPositions(s, positions = null) {
+  const count = {};
+  for (const ch of s) count[ch] = (count[ch] ?? 0) + 1;
+  const ps = positions ?? [...s].map((_, i) => i);
+  return ps.filter((p) => s[p] !== '0' && count[s[p]] === 1);
+}
+
 // Distractor helpers -----------------------------------------------------------
 
 // Plausible wrong numbers near a correct value.

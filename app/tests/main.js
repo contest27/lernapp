@@ -45,6 +45,7 @@ async function run() {
       endpoint: await import('../js/qa/endpoint.js'),
       rhythm: await import('../js/shell/rhythm.js'),
       y5bridge: await import('../js/maths/y5-bridge.js'),
+      vis: await import('../js/maths/content/vis.js'),
       // English (Wordforge port)
       enVocab: await import('../js/english/engine/vocab.js'),
       enLevel: await import('../js/english/engine/level.js'),
@@ -425,7 +426,7 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v12'"), 'CACHE_VERSION was not bumped for the y5Seeded migration guard');
+    ok(swText.includes("'lernapp-v13'"), 'CACHE_VERSION was not bumped for the number-line and ambiguous-digit fixes');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
@@ -1112,6 +1113,65 @@ async function run() {
     }));
     ok(!seedY6FromY5(st), 'nothing recognised means nothing learned');
     ok(!st.maths.y6.diagnosticDone, 'so the check is still owed');
+  });
+
+  test('number line: tick labels never overlap', () => {
+    // Reported from the device: the numbers on the line could not be read. The
+    // lesson's own line put eleven 46 px labels on a 28.8 px pitch. Measured
+    // here for real (getComputedTextLength), not estimated, for every number
+    // line the content actually builds.
+    const { numberLine } = mods.vis;
+    const lines = [
+      ['pv10m lesson', numberLine(3000000, 4000000, [{ v: 3600000, label: '?' }], { step: 100000 })],
+      ['pv10m question', numberLine(4000000, 5000000, [4300000], { step: 100000 })],
+      ['negatives lesson', numberLine(-8, 4, [{ v: -6, label: '-6' }], { step: 1 })],
+      ['negatives question', numberLine(-10, 10, [{ v: -3, label: '-3' }], { step: 1 })],
+      ['fractions 0-1', numberLine(0, 1, [{ v: 0.75, label: '3/4' }], { step: 0.25 })],
+      ['fractions halves', numberLine(0, 1, [{ v: 0.5, label: '?' }], { step: 0.5 })],
+    ];
+    const host = document.createElement('div');
+    document.body.append(host);
+    try {
+      for (const [name, svgText] of lines) {
+        host.innerHTML = svgText;
+        const labels = [...host.querySelectorAll('text')]
+          .filter((t) => t.getAttribute('font-size') === '11')
+          .map((t) => ({ s: t.textContent, x: Number(t.getAttribute('x')), w: t.getComputedTextLength() }))
+          .sort((a, b) => a.x - b.x);
+        ok(labels.length >= 2, `${name}: a line with fewer than two labels is not a number line`);
+        for (let i = 1; i < labels.length; i++) {
+          const prevRight = labels[i - 1].x + labels[i - 1].w / 2;   // text-anchor is middle
+          const left = labels[i].x - labels[i].w / 2;
+          ok(left >= prevRight, `${name}: "${labels[i - 1].s}" and "${labels[i].s}" overlap by ${Math.round(prevRight - left)}px`);
+        }
+        ok(host.querySelectorAll('line').length > labels.length,
+          `${name}: thinning the labels must not thin the ticks`);
+      }
+    } finally {
+      host.remove();
+    }
+  });
+
+  test('place value: a digit named by its face value occurs exactly once', () => {
+    // Reported from the device: "What is the value of the digit 5 in 556,539?"
+    // — three fives, so the question has three answers. This sweeps every
+    // generator, not just the two that had the bug, so a future one cannot
+    // reintroduce it.
+    const check = (prompt) => {
+      const plain = String(prompt).replace(/<[^>]*>/g, '');
+      const m = /digit\s+(\d)\s+in\s+([\d,]+)/.exec(plain);
+      if (!m) return;
+      const hits = m[2].split('').filter((c) => c === m[1]).length;
+      ok(hits === 1, `names the digit ${m[1]}, which appears ${hits} times: ${plain}`);
+    };
+    for (const seed of ['a', 'b', 'c', 'd', 'e', 'f']) {
+      for (const q of mods.content.diagnosticItems(makeRng(seedFromString(seed)))) check(q.prompt);
+      for (const t of topics) {
+        for (const tier of [1, 2, 3]) {
+          for (let i = 0; i < 6; i++) check(t.gen(makeRng(seedFromString(`${seed}|${t.id}|${tier}|${i}`)), tier).prompt);
+        }
+      }
+    }
   });
 
   test('diagnostic: every item stays Year 5 revision', () => {

@@ -57,15 +57,47 @@ export function pvGrid(n, { decimals = 0 } = {}) {
   return `<svg ${NS} viewBox="0 0 ${W} ${H}">${cells}</svg>`;
 }
 
+// DIVERGED 2026-08-25 (the Y5 app is frozen, so there is no upstream to send
+// this to): the labels are thinned to fit. Every tick used to carry its full
+// value, which on the lesson's own line — 3,000,000 to 4,000,000 in steps of
+// 100,000 — put eleven labels of 46 px on a 28.8 px pitch. Measured in the
+// browser: 17 px of overlap per label, i.e. an unreadable smear. Reported from
+// the device.
+//
+// The values keep their full form with the thousands commas: this line teaches
+// reading big numbers, so "3,600,000" is the point and "3.6M" would dodge it.
+// Fewer labels, not shorter ones. Every TICK is still drawn.
+const LABEL_PX_PER_CHAR = 6.2;   // measured: "3,000,000" is 46 px at font-size 11
+const LABEL_PAD = 8;
+
 export function numberLine(min, max, marks = [], { step = null } = {}) {
   const W = 320, H = 70, x0 = 16, x1 = W - 16;
   const X = (v) => x0 + ((v - min) / (max - min)) * (x1 - x0);
-  let ticks = '';
   const s = step ?? (max - min) / 4;
-  for (let v = min; v <= max + 1e-9; v += s) {
-    ticks += `<line x1="${X(v)}" y1="30" x2="${X(v)}" y2="42" stroke="#334155" stroke-width="1.5"/>
-      <text x="${X(v)}" y="60" text-anchor="middle" font-size="11">${fmtShort(v)}</text>`;
-  }
+  const vals = [];
+  for (let v = min; v <= max + 1e-9; v += s) vals.push(v);
+
+  const last = vals.length - 1;
+  const pitch = last > 0 ? (x1 - x0) / last : x1 - x0;
+  const widest = Math.max(...vals.map((v) => fmtShort(v).length)) * LABEL_PX_PER_CHAR;
+  const minEvery = Math.max(1, Math.ceil((widest + LABEL_PAD) / pitch));
+  // Step to a spacing that DIVIDES the line, so both ends keep their label: on
+  // a line from 3,000,000 to 4,000,000 those two are the whole point. Every
+  // third tick would have ended at 3,900,000 and left the end unnamed.
+  let every = minEvery;
+  while (every < last && last % every !== 0) every += 1;
+
+  const shown = new Set();
+  for (let i = 0; i <= last; i += every) shown.add(i);
+  shown.add(last);
+
+  let ticks = '';
+  vals.forEach((v, i) => {
+    ticks += `<line x1="${X(v)}" y1="30" x2="${X(v)}" y2="42" stroke="#334155" stroke-width="1.5"/>`;
+    if (shown.has(i)) {
+      ticks += `<text x="${X(v)}" y="60" text-anchor="middle" font-size="11">${fmtShort(v)}</text>`;
+    }
+  });
   let dots = '';
   for (const m of marks) {
     const v = typeof m === 'number' ? m : m.v;
