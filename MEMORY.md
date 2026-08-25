@@ -24,6 +24,29 @@ Project-scope memory. Cross-project lessons go to `~/.claude/MEMORY.md`.
   Requires the Y5 topic modules as review material — arrives with B4.
 - **2026-08-16 — Icons emerald, not sky-blue.** Both apps sit on the same iPad
   home screen during the handover; the child must tell them apart at a glance.
+- **2026-08-25 — Y5 mastery replaces the Y6 warm-up check.** `maths/y5-bridge.js`
+  maps Y5 topic → Y5 strand → Y6 strand and seeds every Y6 prior with
+  `clamp(50 + 0.6·(y5mean − 50), 30, 85)` from the COMPLETED Y5 topics only —
+  reading all mastery entries would feed Y5's own diagnostic guesses back in as
+  if they were evidence. Guarded by evidence on the y6 slice rather than by a
+  flag, so it is idempotent and runs on every launch (the import on the device
+  had already happened). The check survives for a device with no import, but
+  every item is now Y5 revision: it runs before any Y6 lesson, so Y6 questions
+  measure nothing but whether his class has got there.
+- **2026-08-25 — AI availability is a SERVER question, not a device-key one.**
+  `functions/api/health.js` (booleans only) plus `aiReady()`/`sttReady()` in
+  `qa/endpoint.js` replace six `!!shell.apiKey` gates that switched the tutor,
+  both dictionaries, the forge and the answer grader off on the only host where
+  they work. An unanswered probe counts as available on purpose. Both no-server
+  cases answer HTML, so 404 = no server and 200/redirect = signed out (expired
+  Cloudflare Access session) — that distinction is what lets the parent corner
+  say "sign in again in Safari".
+- **2026-08-25 — Speech goes through Gemini, not Apple.** `english/ui/stt.js`
+  (ported from Facharzttrainer) records, converts to 16 kHz mono WAV and asks
+  `/api/stt` for a VERBATIM transcript; device dictation is only the fallback,
+  because it silently corrects his English — the one thing worth hearing. A
+  refused microphone no longer disables speech permanently; only the parent
+  corner switch does.
 
 ## Learnings
 
@@ -31,3 +54,12 @@ Project-scope memory. Cross-project lessons go to `~/.claude/MEMORY.md`.
   keys — hydrate merges shell and each slice one level deep. `Element.append(null)`
   renders "null". Dev server must send no-store. SW updates land on the SECOND
   real iOS launch.)
+- **[LEARN:tooling] `node --check` cannot be trusted here** — it exited 0 on a
+  file with a plain syntax error (an unescaped `'` inside a string). The
+  reliable check for a changed module is a dynamic `import()` of it in the
+  browser (tests page or preview console); that is what actually caught it.
+- **[LEARN:tooling] Never let a patch script write in place.**
+  `pathlib.write_text` truncates the file first and then fails on an encoding
+  error: one lone-surrogate emoji emptied `talk.js` completely (`git checkout`
+  recovered it). Write to `.tmp`, then `os.replace`, and keep patch scripts
+  ASCII — `—`-style escapes rather than literal characters.
