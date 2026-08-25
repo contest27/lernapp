@@ -93,6 +93,36 @@ gesprochener Durchgang auf dem iPad (lokal gibt es keine Pages Functions).
   Rettung war `git checkout`. Seitdem: erst in `.tmp` schreiben, dann
   `os.replace` — und keine Nicht-ASCII-Literale in Patch-Skripten.
 
+## Nachtrag (gleiche Session) — der Guard war falsch herum
+
+Sebastian meldete: „es startet immer noch der check up". Beim Nachsehen zwei
+Lücken in `seedY6FromY5`, beide aus demselben Denkfehler:
+
+1. **`diagnosticDone` als Guard sperrte genau die Geräte aus, um die es geht.**
+   Wer den alten Check schon einmal gesessen hatte, bekam die Y5-Priors nie —
+   obwohl dieser Check das ist, was wir für wertlos erklärt haben. Der Guard
+   ist jetzt ein einmaliges Migrationsflag `y5Seeded` (neu in
+   `curriculumState()`, per `hydrate()` nachgezogen) plus die eigentliche
+   Evidenz: ein abgeschlossenes Thema oder eine beantwortete Frage. Ein
+   Diagnostik-Item zählt nicht dazu — `recordResult` füllt dafür nur
+   `session.diag`, nie `state.attempts` (`ui/session.js:352`).
+2. **Eine angefangene Diagnostik-Session überlebte das Seeding.** `activeSession`
+   vom selben Tag lässt die Tageskarte „Session in progress → Continue" zeigen
+   und führt zurück in die gerade abgeschaffte Fragerunde. Wird jetzt verworfen,
+   aber nur wenn `kind === 'diagnostic'`.
+
+Verifiziert mit genau seinem Zustand (Y5-Slice + `diagnosticDone: true` +
+halbfertige Diagnostik von heute): nach dem Laden `y5Seeded: true`,
+`activeSession: null`, Tageskarte „Today's topic · Place value within
+10,000,000". Tests 87 passed / 0 failed. `CACHE_VERSION` → `lernapp-v12`.
+
+**Nicht prüfbar von hier:** ob der Pages-Build durch ist. Produktion und
+Branch-Alias antworten mit 302 auf den Access-Login, die GitHub-Deployments-API
+kennt nur die alten github-pages-Einträge (Workflow am 19.08. entfernt), und ein
+Cloudflare-Token liegt bewusst nicht im Repo. Prüfmarke für den angemeldeten
+Browser: `/api/health` existiert erst seit `431ae83` — ein 404 dort heisst
+„Build noch nicht da".
+
 ## Ausserhalb dieser Änderung aufgefallen
 
 - `ui/today.js` sagt an einem Englisch-Tag noch „The English lessons are still

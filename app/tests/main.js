@@ -425,7 +425,7 @@ async function run() {
 
   test('sw: precache names every module and the version moves', () => {
     ok(swText, 'sw.js did not load');
-    ok(swText.includes("'lernapp-v11'"), 'CACHE_VERSION was not bumped for the English-day card copy fix');
+    ok(swText.includes("'lernapp-v12'"), 'CACHE_VERSION was not bumped for the y5Seeded migration guard');
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
@@ -1056,6 +1056,31 @@ async function run() {
     shellStorage.importY5Backup(fresh, y5Real());
     fresh.maths.y6.attempts.push({ d: '2026-09-01', t: 'u01-pv10m', tier: 1, ok: 1 });
     ok(!seedY6FromY5(fresh), 'a single answered question is worth more than a borrowed prior');
+  });
+
+  test('y5-bridge: a device that already sat the old check still gets the Year 5 priors', () => {
+    // The check it sat is the one we decided was worthless (Year 6 material
+    // before any Year 6 lesson), so diagnosticDone must not lock the device out
+    // of the better evidence. A half-finished check must not survive either:
+    // the day card would offer "Continue" straight back into it.
+    const { seedY6FromY5 } = mods.y5bridge;
+    const st = shellStorage.defaultState();
+    shellStorage.importY5Backup(st, y5Real());
+    st.maths.y6.diagnosticDone = true;
+    st.maths.y6.activeSession = { day: '2026-08-25', kind: 'diagnostic', phase: 'items', items: [], idx: 0 };
+
+    ok(seedY6FromY5(st), 'the Year 5 scores still win');
+    eq(st.maths.y6.activeSession, null, 'the pending warm-up check is dropped');
+    ok(st.maths.y6.y5Seeded, 'and it is marked as migrated');
+    ok(!seedY6FromY5(st), 'exactly once, however often the app launches');
+
+    // A session that is NOT the warm-up check is left alone.
+    const other = shellStorage.defaultState();
+    shellStorage.importY5Backup(other, y5Real());
+    const live = { day: '2026-08-25', kind: 'daily', phase: 'items', items: [], idx: 0 };
+    other.maths.y6.activeSession = live;
+    ok(seedY6FromY5(other));
+    eq(other.maths.y6.activeSession, live, 'a real lesson in progress is none of our business');
   });
 
   test('y5-bridge: every implemented Year 6 strand can be reached from Year 5, or is knowingly new', () => {

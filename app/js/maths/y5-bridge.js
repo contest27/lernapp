@@ -103,17 +103,26 @@ export function strandMeans(y5) {
   return out;
 }
 
-// Seed the active Year 6 slice from an imported Year 5 one and mark the
-// warm-up check done. Returns true when it actually seeded.
+// Seed the active Year 6 slice from an imported Year 5 one and retire the
+// warm-up check. Returns true when it actually seeded.
 //
-// Idempotent by the same guard that makes it safe: any evidence on the y6
-// slice — a finished check, a completed topic, a single answered question —
-// and the function does nothing at all. It can therefore run on every launch.
+// Runs on every launch, so it is guarded twice:
+//
+// 1. `y5Seeded` makes it a ONE-TIME migration. It used to be guarded by
+//    diagnosticDone instead, which had it backwards: a device that had already
+//    sat the old check was locked out of the Year 5 priors forever — and that
+//    check is the very thing we decided was worthless, since it asked Year 6
+//    material before a single Year 6 lesson.
+// 2. Real practice outranks a borrowed prior. One completed topic or one
+//    answered question and this never touches the slice again. (A diagnostic
+//    answer is not one of those: recordResult only fills the session's own
+//    strand tally for diagnostic items, never state.attempts.)
 export function seedY6FromY5(state) {
   const y5 = state.maths?.y5;
   const y6 = state.maths?.[state.maths?.active ?? 'y6'];
   if (!y5 || !y6) return false;
-  if (y6.diagnosticDone || y6.completed.length || y6.attempts.length) return false;
+  if (y6.y5Seeded) return false;
+  if (y6.completed.length || y6.attempts.length) return false;
 
   const means = strandMeans(y5);
   // A backup whose topic ids we do not recognise (a hand-edited file, or a
@@ -126,7 +135,12 @@ export function seedY6FromY5(state) {
     const mean = means[t.strand];
     y6.mastery[t.id] = newMastery(mean == null ? 50 : priorFromY5(mean));
   }
+  y6.y5Seeded = true;
   y6.diagnosticDone = true;
+  // A warm-up check he had already started must not outlive it. Without this,
+  // the day card still finds a resumable session from today and offers
+  // "Continue" straight back into the questions we just retired.
+  if (y6.activeSession?.kind === 'diagnostic') y6.activeSession = null;
   return true;
 }
 

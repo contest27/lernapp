@@ -42,6 +42,7 @@ export function curriculumState() {
     stars: {},         // topicId -> 1..3
     completed: [],     // topicIds in completion order
     diagnosticDone: false,
+    y5Seeded: false,   // the one-time Year 5 -> Year 6 prior migration (maths/y5-bridge.js)
     history: [],       // { day, kind, topicId, total, correct, minutes }
     attempts: [],      // { d, t, tier, ok }
     qaLog: [],         // { day, topicId, q, a, source }
