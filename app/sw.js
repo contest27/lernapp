@@ -1,7 +1,9 @@
 // Precaching service worker. Bump CACHE_VERSION on every deploy so clients
 // pick up new content; old caches are cleared on activate.
 
-const CACHE_VERSION = 'lernapp-v14';
+// MUST match BUILD in app/js/shell/build.js — the app compares it against the
+// stamp on a stored session, and the test suite fails if the two drift apart.
+const CACHE_VERSION = 'lernapp-v15';
 
 // English (Wordforge) chapter narration MP3s live in their own long-lived
 // cache that SURVIVES CACHE_VERSION bumps: they are addressed by chapter
@@ -26,6 +28,7 @@ const ASSETS = [
   './js/shell/storage.js',
   './js/shell/core.js',
   './js/shell/rhythm.js',
+  './js/shell/build.js',
   './js/maths/y5-bridge.js',
   './js/ui/home.js',
   './js/ui/parent.js',

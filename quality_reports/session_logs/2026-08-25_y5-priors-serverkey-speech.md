@@ -192,6 +192,36 @@ Verifiziert: 12 simulierte Tage ergeben durchgehend 11, und im UI steht bei
 Item 8/11 weiter „Practise" mit „🔁 Numbers to 10 million" am Item.
 Tests 90 passed / 0 failed, `CACHE_VERSION` → `lernapp-v14`.
 
+## Nachtrag 4 (2026-08-27) — warum ein deployter Fix das Gerät nicht erreichte
+
+Sebastian: „die beiden Fehler hatten wir heute wieder, trotz 2× Neustart."
+Repo geprüft: Arbeitsverzeichnis sauber, `origin/main` enthält alle drei Fixes
+und `lernapp-v14`. `/api/health` meldet beide Keys — der Build lief also.
+
+**Ursache:** `buildSession()` generiert alle Fragen im Voraus und legt sie
+**fertig** ab — Text *und* das gerenderte SVG — in `slice.activeSession`, also
+in localStorage. `startOrResume()` nimmt jede Sitzung desselben Tages wieder
+auf. Eine morgens auf dem alten Stand gebaute Sitzung trägt ihre kaputten
+Fragen deshalb durch jeden Deploy und jeden Neustart. Genau das war zu sehen.
+
+Das ist die allgemeine Form des Problems: **ein Content-Fix erreicht keine
+Sitzung, die schon existiert.** Gilt für jede künftige Korrektur an
+Generatoren, Aufgabentexten oder Visualisierungen.
+
+**Lösung:** `app/js/shell/build.js` exportiert `BUILD`; jede gebaute Sitzung
+trägt den Stempel, und `app.js` verwirft beim Start jede Sitzung eines älteren
+Builds (alle Curriculum-Slices). `isResumable()` in `session.js` macht die
+Regel explizit und testbar. `BUILD` und `CACHE_VERSION` müssen identisch sein —
+der SW-Test vergleicht sie jetzt gegeneinander statt gegen ein Literal, also
+kann das Paar nicht mehr auseinanderlaufen.
+
+Eine halbfertige Sitzung am Deploy-Tag zu verlieren ist der billigere Fehler:
+ihre Fragen sind genau die, die wir gerade repariert haben.
+
+Verifiziert mit einer nachgebauten Alt-Sitzung (ohne Stempel, mit beiden
+Fehlern): nach dem Start `activeSession: null`, Karte „Today's topic", frische
+11er-Sitzung mit `lernapp-v15`. Tests 91 passed / 0 failed.
+
 ## Ausserhalb dieser Änderung aufgefallen
 
 - `ui/today.js` sagt an einem Englisch-Tag noch „The English lessons are still

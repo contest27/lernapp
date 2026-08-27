@@ -48,6 +48,16 @@ Project-scope memory. Cross-project lessons go to `~/.claude/MEMORY.md`.
   refused microphone no longer disables speech permanently; only the parent
   corner switch does.
 
+- **2026-08-27 — A deployed content fix cannot reach a session that already
+  exists.** `buildSession()` generates every question up front and stores it
+  FINISHED — prompt text and rendered SVG — in `slice.activeSession`, i.e. in
+  localStorage; `startOrResume()` picks it up again all day. Two faulty
+  questions therefore survived the fix, the deploy and two full restarts. Every
+  session now carries the `BUILD` stamp from `shell/build.js`, and `app.js`
+  discards a session from an older build at launch. `BUILD` and `CACHE_VERSION`
+  in `sw.js` must be the same string — the test compares them against each
+  other, so bumping one without the other fails the suite.
+
 ## Learnings
 
 - (Inherited, still binding here: `Object.assign` on nested state drops new

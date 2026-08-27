@@ -19,6 +19,7 @@ import { aiReady } from '../qa/endpoint.js';
 import { segmentEl, exampleEl, explanationSheet } from './explain.js';
 import { attachGloss } from './gloss.js';
 import { dayPlan, activeDeferrals } from '../shell/rhythm.js';
+import { BUILD } from '../shell/build.js';
 import * as tts from '../tts.js';
 
 // ---------------------------------------------------------------- session build
@@ -58,6 +59,11 @@ export function buildSession() {
   }
   return {
     day: today,
+    // The build that generated these questions. They are stored finished —
+    // prompt and rendered SVG — so a content fix cannot reach a session that
+    // already exists; see shell/build.js. Sessions from an older build are
+    // rebuilt rather than resumed.
+    build: BUILD,
     kind: plan.kind,
     newTopic: plan.newTopic ?? null,
     phase: plan.kind === 'daily' && plan.newTopic ? 'explain' : 'items',
@@ -69,10 +75,15 @@ export function buildSession() {
   };
 }
 
+// True for a session that may still be picked up: same day, not finished, and
+// built by THIS build.
+export function isResumable(s) {
+  return !!s && s.day === dayKey() && s.phase !== 'done' && s.build === BUILD;
+}
+
 export function startOrResume() {
-  const today = dayKey();
   const s = cur().activeSession;
-  if (s && s.day === today && s.phase !== 'done') {
+  if (isResumable(s)) {
     go('session');
     return;
   }
