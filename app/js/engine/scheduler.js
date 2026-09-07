@@ -6,6 +6,11 @@
 // class, so the caller needs to say "no new topic today" (cadence) and "not
 // this one" (the child said it has not been taught yet). Both only affect topic
 // SELECTION — mastery, review and scoring are untouched.
+//
+// DIVERGED 2026-09-07: a review-only day spreads over up to five topics
+// (MAX_REVIEW_TOPICS_ONLY) instead of three. The Year 5 topics joined the
+// review pool that day (content/y5.js) and eleven questions over three topics
+// was the wrong shape for a pool of forty-five.
 import { bandOf } from './mastery.js';
 import { daysBetween } from './storage.js';
 
@@ -114,7 +119,8 @@ export const NEW_TOPIC_TIERS_SOLO = [1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
 
 export const REVIEW_ITEMS_DAILY = SESSION_ITEMS - NEW_TOPIC_TIERS.length;  // 4
 export const REVIEW_ITEMS_ONLY = SESSION_ITEMS;   // a day with no new topic
-export const MAX_REVIEW_TOPICS = 3;
+export const MAX_REVIEW_TOPICS = 3;               // behind a new topic: 4 items over ≤ 3 topics
+export const MAX_REVIEW_TOPICS_ONLY = 5;          // review-only day: 11 items over ≤ 5 (3/2/2/2/2)
 
 // Finish-by-target pacing: how many new topics per day are needed to complete
 // the journey by settings.targetDate? Null when there is no target, the target
@@ -154,7 +160,8 @@ export function planSession(state, topicOrder, today, rng, meta = null, opts = {
   const extraTopic = newTopic && pacing(state, topicOrder, today)?.needTwo
     ? nextNewTopic(state, topicOrder, meta, [...skip, newTopic])
     : null;
-  const due = pickReviewTopics(dueReviewTopics(state, today), newTopic, meta);
+  const maxTopics = newTopic ? MAX_REVIEW_TOPICS : MAX_REVIEW_TOPICS_ONLY;
+  const due = pickReviewTopics(dueReviewTopics(state, today), newTopic, meta, maxTopics);
   const reviewCount = newTopic ? REVIEW_ITEMS_DAILY : REVIEW_ITEMS_ONLY;
 
   // Spread review items across the chosen topics, weakest topic gets the most.
@@ -170,7 +177,7 @@ export function planSession(state, topicOrder, today, rng, meta = null, opts = {
     const weakest = state.completed
       .slice()
       .sort((a, b) => state.mastery[a].score - state.mastery[b].score)
-      .slice(0, MAX_REVIEW_TOPICS);
+      .slice(0, MAX_REVIEW_TOPICS_ONLY);
     for (let i = 0; i < REVIEW_ITEMS_ONLY && weakest.length; i++) {
       const topicId = weakest[i % weakest.length];
       review.push({ topicId, tier: reviewTier(state.mastery[topicId].score, rng) });

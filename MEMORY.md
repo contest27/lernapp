@@ -58,6 +58,24 @@ Project-scope memory. Cross-project lessons go to `~/.claude/MEMORY.md`.
   in `sw.js` must be the same string — the test compares them against each
   other, so bumping one without the other fails the suite.
 
+- **2026-09-07 — B4: the Year 5 topics are review material now.** Reported
+  from the device: sessions were almost all column +/−. The review pool held
+  only completed Y6 topics (three after two weeks) while a new topic arrives
+  every six days, and a review-only day filled 11 items over ≤ 3 due topics.
+  `content/y5{a,b,c}.js` are verbatim copies of the Y5 trainer's modules
+  (@ aa8bd0b); `content/y5.js` is their register and owns the Y5→Y6 strand
+  map. `seedReviewPoolFromY5` (y5-bridge) puts all 32 into `completed` +
+  `mastery` of the y6 slice once, due today; review-only days now spread over
+  5 topics (`MAX_REVIEW_TOPICS_ONLY`). `topics`/`topicOrder` stay Y6-only.
+  - **[LEARN:state] `slice.completed` is no longer "journey progress".** It
+    carries the 32 Y5 review ids too, so every count must go through
+    `completedY6(slice)` (content/index.js). The Today card read the raw
+    length and showed "35/13" — caught in the manual pass, not by the tests,
+    which had no display assertion for it.
+  - **[LEARN:tests] The tier-3 rotation test is a scenario()-deck test.** Most
+    Y5 tier 3s are procedural templates with no deck, where two identical
+    shells in a row are a coin flip; the test stays Y6-only on purpose.
+
 ## Learnings
 
 - (Inherited, still binding here: `Object.assign` on nested state drops new

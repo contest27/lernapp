@@ -1,8 +1,8 @@
 import { mount, go, store, cur, onAfterRender, rerender, currentScreen } from './shell/core.js';
-import { seedY6FromY5 } from './maths/y5-bridge.js';
+import { seedY6FromY5, seedReviewPoolFromY5 } from './maths/y5-bridge.js';
 import { probeServer } from './qa/endpoint.js';
 import { BUILD } from './shell/build.js';
-import { curricula } from './shell/storage.js';
+import { curricula, dayKey } from './shell/storage.js';
 import './ui/home.js';
 import './ui/today.js';
 import './ui/map.js';
@@ -42,6 +42,9 @@ for (const name of curricula(store.state)) {
 // otherwise still be waiting for a check it must never sit — the function is a
 // no-op the moment the slice has any evidence of its own.
 if (seedY6FromY5(store.state)) store.save();
+// And the Year 5 topics themselves become review material — once, on the
+// first launch of a build that has them (maths/y5-bridge.js, phase B4).
+if (seedReviewPoolFromY5(store.state, dayKey())) store.save();
 
 // Ask the server once whether it holds the API keys, so the AI features can be
 // offered on their real availability instead of on whether a key was typed

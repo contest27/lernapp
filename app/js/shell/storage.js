@@ -43,6 +43,7 @@ export function curriculumState() {
     completed: [],     // topicIds in completion order
     diagnosticDone: false,
     y5Seeded: false,   // the one-time Year 5 -> Year 6 prior migration (maths/y5-bridge.js)
+    y5ReviewSeeded: false, // the one-time "Year 5 topics join the review pool" migration (same file, B4)
     history: [],       // { day, kind, topicId, total, correct, minutes }
     attempts: [],      // { d, t, tier, ok }
     qaLog: [],         // { day, topicId, q, a, source }

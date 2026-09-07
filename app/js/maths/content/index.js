@@ -8,6 +8,7 @@
 // become two clean islands instead of one torn one.
 
 import { topics6a } from './y6a.js';
+import { y5Topics, y5TopicById, y6StrandOfY5 } from './y5.js';
 
 export const STRANDS = {
   place: { title: 'Place value island', icon: '🔢' },
@@ -24,12 +25,27 @@ export const STRANDS = {
   stats: { title: 'Data harbour', icon: '📊' },
 };
 
+// `topics` / `topicOrder` are the Year 6 JOURNEY only: the map, the pacing and
+// the progress counts all read them. The Year 5 topics (content/y5.js) are
+// review material — resolvable by id, never part of the journey.
 export const topics = [...topics6a];
 export const topicOrder = topics.map((t) => t.id);
+export { y5Topics };
 
 const byId = new Map(topics.map((t) => [t.id, t]));
 export function topicById(id) {
-  return byId.get(id);
+  return byId.get(id) ?? y5TopicById(id);
+}
+
+export function isY6Topic(id) {
+  return byId.has(id);
+}
+
+// How many JOURNEY topics a slice has finished. `slice.completed` also carries
+// the Year 5 review topics once they are seeded (maths/y5-bridge.js), so a
+// bare `completed.length` would read "45/13".
+export function completedY6(slice) {
+  return (slice.completed ?? []).filter((id) => byId.has(id)).length;
 }
 
 // Cross-strand prerequisites. Inside a strand the book order always holds, so
@@ -41,7 +57,9 @@ export const PREREQS = {
 
 // Handed to the scheduler so the engine stays free of content imports.
 export const journeyMeta = {
-  strandOf: (id) => byId.get(id)?.strand ?? null,
+  // A Year 5 review topic answers with the Year 6 strand it counts as, so the
+  // review block's variety rule sees "fourops" for Y5 column addition too.
+  strandOf: (id) => byId.get(id)?.strand ?? y6StrandOfY5(id),
   prereqsOf: (id) => PREREQS[id] ?? [],
 };
 

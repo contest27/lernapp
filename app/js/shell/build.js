@@ -17,4 +17,4 @@
 //
 // MUST equal CACHE_VERSION in app/sw.js — the two mark the same thing, and the
 // test suite fails if they drift apart. Bump both on every deploy.
-export const BUILD = 'lernapp-v15';
+export const BUILD = 'lernapp-v16';

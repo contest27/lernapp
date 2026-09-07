@@ -4,7 +4,7 @@
 
 import { h, store, go, en, registerScreen } from '../shell/core.js';
 import { dayKey, activeCurriculum } from '../shell/storage.js';
-import { topicOrder } from '../maths/content/index.js';
+import { topicOrder, completedY6 } from '../maths/content/index.js';
 import { arcById } from '../english/content/story-index.js';
 
 const CURRICULUM_LABEL = { y6: 'Year 6', y5: 'Year 5 review' };
@@ -33,7 +33,7 @@ registerScreen('home', () => {
 
   // ---- maths card
   const cur = activeCurriculum(st);
-  const done = cur.completed.length;
+  const done = completedY6(cur); // journey topics only — Year 5 review ids also live in `completed`
   const total = topicOrder.length;
   const label = CURRICULUM_LABEL[st.maths.active] ?? st.maths.active;
   wrap.append(h('button', { class: 'card hub-card hub-go', onclick: () => go('today') },

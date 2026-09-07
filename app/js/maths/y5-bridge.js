@@ -18,47 +18,12 @@
 
 import { newMastery } from '../engine/mastery.js';
 import { topics } from './content/index.js';
+import { y5Topics, y5TopicById, Y5_TO_Y6_STRAND } from './content/y5.js';
 
-// Year 5 topic -> Year 5 strand. Copied from powermath-trainer's
-// content/index.js + c5a/c5b/c5c topic list; the Y5 TOPIC MODULES are not
-// ported yet (phase B4), so an imported y5 slice carries topic ids and scores
-// but no strand information of its own. When B4 lands, this table is replaced
-// by the real content module's journeyMeta.strandOf.
-export const Y5_TOPIC_STRAND = {
-  'u01-pv100k': 'place', 'u02-pv1m': 'place', 'u02-negatives': 'place',
-  'u03-column': 'addsub', 'u03-mental': 'addsub', 'u03-problems': 'addsub',
-  'u04-graphs': 'stats',
-  'u05-factors': 'multdiv', 'u05-squares': 'multdiv',
-  'u06-perimeter': 'measure', 'u06-area': 'measure',
-  'u07-written-mult': 'multdiv', 'u07-long-mult': 'multdiv', 'u07-division': 'multdiv',
-  'u08-equivalent': 'fractions', 'u08-mixed': 'fractions',
-  'u09-addsub-frac': 'fractions', 'u09-mixed-addsub': 'fractions',
-  'u10-mult-frac': 'fractions', 'u10-frac-amounts': 'fractions',
-  'u11-decimals-frac': 'decimals', 'u11-compare-dec': 'decimals', 'u11-percent': 'decimals',
-  'u12-addsub-dec': 'decimals', 'u12-shift-dec': 'decimals',
-  'u13-angle-types': 'geometry', 'u13-missing-angles': 'geometry',
-  'u14-shapes': 'geometry', 'u15-position': 'geometry',
-  'u16-metric': 'measure', 'u16-imperial-time': 'measure', 'u17-volume': 'measure',
-};
-
-// Year 5 strand -> the Year 6 strands it is evidence for. A list, because the
-// mapping is genuinely one-to-many in both directions: Year 5 split arithmetic
-// into addsub + multdiv where Year 6 has one fourops strand, and Year 5 kept a
-// single geometry strand where Year 6 has two (position, shapes).
-//
-// Deliberately NOT mapped: Year 6's algebra, ratio and problem strands. They
-// are new this year — there is no Year 5 evidence for them, and a borrowed
-// prior would be a guess dressed up as a measurement. They start neutral.
-export const Y5_TO_Y6_STRAND = {
-  place: ['place'],
-  addsub: ['fourops'],
-  multdiv: ['fourops'],
-  fractions: ['fractions'],
-  decimals: ['decimals', 'percentages'], // Y5 u11-percent lives in decimals
-  measure: ['measure'],
-  geometry: ['position', 'shapes'],
-  stats: ['stats'],
-};
+// The Year 5 topic -> strand table that used to live here is gone: since B4
+// (2026-09-07) the Year 5 topic modules themselves are in content/y5.js, and
+// so is the Year 5 -> Year 6 strand map. Re-exported for the tests.
+export { Y5_TO_Y6_STRAND };
 
 // How a Year 5 score becomes a Year 6 prior.
 //
@@ -87,7 +52,7 @@ export function strandMeans(y5) {
   const buckets = {};   // y6 strand -> { done: [], any: [] }
   for (const [topicId, m] of Object.entries(y5.mastery ?? {})) {
     if (!m || typeof m.score !== 'number') continue;
-    const y5strand = Y5_TOPIC_STRAND[topicId];
+    const y5strand = y5TopicById(topicId)?.strand;
     if (!y5strand) continue; // an unknown topic id (hand-edited backup): ignore
     for (const y6strand of Y5_TO_Y6_STRAND[y5strand] ?? []) {
       const b = buckets[y6strand] ?? (buckets[y6strand] = { done: [], any: [] });
@@ -141,6 +106,51 @@ export function seedY6FromY5(state) {
   // the day card still finds a resumable session from today and offers
   // "Continue" straight back into the questions we just retired.
   if (y6.activeSession?.kind === 'diagnostic') y6.activeSession = null;
+  return true;
+}
+
+// Put the Year 5 topics into the Year 6 review pool (phase B4, 2026-09-07).
+//
+// The scheduler reviews whatever is in `completed` and has a mastery entry
+// (dueReviewTopics), so this is all it takes: every Year 5 topic is entered as
+// completed, with its Year 5 score where the import has one and a neutral 50
+// where it does not, and due TODAY so the whole pool is on offer at once —
+// weakest-first and the Leitner gaps spread it from there.
+//
+// Guards, in order:
+// 1. `y5ReviewSeeded` makes it a one-time migration (it runs on every launch).
+// 2. It needs the y5 slice: without an import the app knows nothing about how
+//    Year 5 went, and a pool of guesses would still be a pool of guesses. The
+//    parent corner says so next to the import button.
+// Unlike seedY6FromY5 it does NOT require an untouched Year 6 slice — the
+// device this was built for already had two weeks of Year 6 practice.
+//
+// The ids go to the FRONT of `completed`: nextNewTopic reads the last two
+// entries to avoid three days of the same strand, and those must stay the
+// child's real Year 6 history. Returns true when it seeded.
+export function seedReviewPoolFromY5(state, today) {
+  const y5 = state.maths?.y5;
+  const y6 = state.maths?.[state.maths?.active ?? 'y6'];
+  if (!y5 || !y6) return false;
+  if (y6.y5ReviewSeeded) return false;
+
+  const fresh = [];
+  for (const t of y5Topics) {
+    const m = y5.mastery?.[t.id];
+    if (!y6.mastery[t.id]) {
+      const entry = newMastery(typeof m?.score === 'number' ? m.score : 50);
+      entry.attempts = m?.attempts ?? 0;
+      entry.correct = m?.correct ?? 0;
+      entry.lastSeen = m?.lastSeen ?? null;
+      entry.box = m?.box ?? 1;
+      entry.due = today;
+      y6.mastery[t.id] = entry;
+    }
+    if (y5.stars?.[t.id] && !y6.stars[t.id]) y6.stars[t.id] = y5.stars[t.id];
+    if (!y6.completed.includes(t.id)) fresh.push(t.id);
+  }
+  y6.completed = [...fresh, ...y6.completed];
+  y6.y5ReviewSeeded = true;
   return true;
 }
 

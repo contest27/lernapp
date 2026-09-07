@@ -5,13 +5,13 @@
 
 import { h, store, go, cur, toast, registerScreen, rerender } from '../shell/core.js';
 import { headerBar, bandDot, starRow, numberPad } from './components.js';
-import { topics, topicById } from '../maths/content/index.js';
+import { topics, topicById, y5Topics, completedY6 } from '../maths/content/index.js';
 import { exportJSON, parseImport, importY5Backup, dayKey, wipe } from '../shell/storage.js';
 import { normaliseWord } from '../maths/content/glossary.js';
 import { subjectOfDay, lastNewTopicDay, activeDeferrals, undeferTopic, DEFER_DAYS } from '../shell/rhythm.js';
 import { testKey } from '../qa/tutor.js';
 import { probeServer, serverStatus } from '../qa/endpoint.js';
-import { seedY6FromY5, seededStrands } from '../maths/y5-bridge.js';
+import { seedY6FromY5, seedReviewPoolFromY5, seededStrands } from '../maths/y5-bridge.js';
 import * as tts from '../tts.js';
 import { englishSection } from '../english/ui/parent-section.js';
 
@@ -67,21 +67,31 @@ registerScreen('parent', () => {
   const totalSessions = slice.history.length;
   const minutes = slice.history.reduce((a, s) => a + (s.minutes || 0), 0);
   ov.append(h('p', { class: 'muted' },
-    `${slice.completed.length}/${topics.length} topics · ${totalSessions} sessions · ~${minutes} min total · streak ${shell.streak.count}`));
-  const table = h('div', { class: 'ptable' });
-  table.append(h('div', { class: 'prow phead' },
-    h('span', {}, 'Topic'), h('span', {}, 'Level'), h('span', {}, 'Stars'), h('span', {}, 'Next review')));
-  for (const t of topics) {
-    const m = slice.mastery[t.id];
-    const done = slice.completed.includes(t.id);
-    table.append(h('div', { class: 'prow' + (done ? '' : ' dim') },
-      h('span', { class: 'pt-title' }, t.shortTitle),
-      h('span', {}, m ? [bandDot(m.score), ' ', String(m.score)] : '—'),
-      done ? starRow(slice.stars[t.id] ?? 0, { size: 'sm' }) : h('span', {}, '—'),
-      h('span', {}, done && m?.due ? m.due.slice(5) : '—'),
-    ));
+    `${completedY6(slice)}/${topics.length} topics · ${totalSessions} sessions · ~${minutes} min total · streak ${shell.streak.count}`));
+  const topicTable = (list) => {
+    const table = h('div', { class: 'ptable' });
+    table.append(h('div', { class: 'prow phead' },
+      h('span', {}, 'Topic'), h('span', {}, 'Level'), h('span', {}, 'Stars'), h('span', {}, 'Next review')));
+    for (const t of list) {
+      const m = slice.mastery[t.id];
+      const done = slice.completed.includes(t.id);
+      table.append(h('div', { class: 'prow' + (done ? '' : ' dim') },
+        h('span', { class: 'pt-title' }, t.shortTitle),
+        h('span', {}, m ? [bandDot(m.score), ' ', String(m.score)] : '—'),
+        done ? starRow(slice.stars[t.id] ?? 0, { size: 'sm' }) : h('span', {}, '—'),
+        h('span', {}, done && m?.due ? m.due.slice(5) : '—'),
+      ));
+    }
+    return table;
+  };
+  ov.append(topicTable(topics));
+  // The Year 5 topics are review material only (content/y5.js): no map, no
+  // "new topic" day, but they are due and levelled like everything else.
+  if (slice.y5ReviewSeeded) {
+    ov.append(h('h3', { class: 'sub' }, 'Year 5 review'),
+      h('p', { class: 'muted' }, 'Kept sharp alongside Year 6 — these only ever appear in the review block.'),
+      topicTable(y5Topics));
   }
-  ov.append(table);
   wrap.append(ov);
 
   // ---- history ----
@@ -348,6 +358,8 @@ registerScreen('parent', () => {
       // seeding here rather than on the next launch means the child sees the
       // effect immediately (maths/y5-bridge.js).
       const seeded = seedY6FromY5(store.state);
+      // The Year 5 topics themselves join the review pool the same moment.
+      seedReviewPoolFromY5(store.state, dayKey());
       store.save();
       toast(seeded
         ? `Year 5 imported — ${store.state.maths.y5.completed.length} topics, and the warm-up check is done`
@@ -360,8 +372,9 @@ registerScreen('parent', () => {
     h('p', { class: 'muted' },
       'A PowerMath Trainer (Year 5) backup can be imported here. The scores do two jobs at once: they seed the '
       + 'Year 6 starting levels strand by strand — which is why an imported device never sits the warm-up check — '
-      + 'and the Year 5 topics themselves become practisable review material in a later update. The Year 5 streak '
-      + 'and its summer deadline are deliberately not carried over.'),
+      + 'and all 32 Year 5 topics join the review pool with their scores, so a review day draws on the whole of '
+      + 'Year 5 as well as what Year 6 has covered so far. The Year 5 streak and its summer deadline are '
+      + 'deliberately not carried over.'),
     // Spread, never `cond ? el : null` as an append argument: append is the raw
     // DOM method and stringifies a null child into the literal text "null".
     ...(y5 ? [h('p', { class: 'muted' },

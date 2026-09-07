@@ -48,6 +48,7 @@ async function run() {
       session: await import('../js/ui/session.js'),
       y5bridge: await import('../js/maths/y5-bridge.js'),
       vis: await import('../js/maths/content/vis.js'),
+      y5: await import('../js/maths/content/y5.js'),
       // English (Wordforge port)
       enVocab: await import('../js/english/engine/vocab.js'),
       enLevel: await import('../js/english/engine/level.js'),
@@ -72,7 +73,9 @@ async function run() {
   const { planSession, nextNewTopic, dueReviewTopics, pickReviewTopics, NEW_TOPIC_TIERS, pacing, SESSION_ITEMS } = mods.scheduler;
   const { checkAnswer, parseNumber, answerText, gcd } = mods.check;
   const { finishSession } = mods.progress;
-  const { topics, topicOrder, topicById, journeyMeta } = mods.content;
+  const { topics, topicOrder, topicById, journeyMeta, y5Topics, completedY6, isY6Topic } = mods.content;
+  // Every generator in the app: the Year 6 journey plus the Year 5 review pool.
+  const allTopics = [...topics, ...y5Topics];
   const shellStorage = mods.shellStorage;
 
   let swText = '';
@@ -225,6 +228,42 @@ async function run() {
       'the one due topic fills the review-only day');
   });
 
+  test('scheduler: a review-only day spreads eleven items over up to five topics, a daily over three', () => {
+    const { MAX_REVIEW_TOPICS, MAX_REVIEW_TOPICS_ONLY, REVIEW_ITEMS_DAILY } = mods.scheduler;
+    eq(MAX_REVIEW_TOPICS, 3);
+    eq(MAX_REVIEW_TOPICS_ONLY, 5);
+    // Whole book learned, everything overdue: a review day with a big pool.
+    const state = shellStorage.defaultState();
+    const slice = state.maths.y6;
+    slice.diagnosticDone = true;
+    for (const id of topicOrder) {
+      slice.completed.push(id);
+      slice.mastery[id] = newMastery(70);
+      slice.mastery[id].due = '2026-01-01';
+    }
+    const plan = planSession(slice, topicOrder, '2026-06-01', makeRng(3), journeyMeta);
+    eq(plan.kind, 'review');
+    eq(plan.review.length, SESSION_ITEMS, 'still one sitting of eleven');
+    const distinct = new Set(plan.review.map((r) => r.topicId));
+    eq(distinct.size, MAX_REVIEW_TOPICS_ONLY, 'five different topics, not three');
+    const per = {};
+    for (const r of plan.review) per[r.topicId] = (per[r.topicId] ?? 0) + 1;
+    ok(Math.max(...Object.values(per)) <= 3, 'no topic gets more than three of the eleven (3/2/2/2/2)');
+
+    // Behind a new topic the review block keeps its old shape: 4 items, ≤ 3 topics.
+    const daily = shellStorage.defaultState().maths.y6;
+    daily.diagnosticDone = true;
+    for (const id of topicOrder.slice(0, 8)) {
+      daily.completed.push(id);
+      daily.mastery[id] = newMastery(70);
+      daily.mastery[id].due = '2026-01-01';
+    }
+    const dplan = planSession(daily, topicOrder, '2026-06-01', makeRng(3), journeyMeta);
+    eq(dplan.kind, 'daily');
+    eq(dplan.review.length, REVIEW_ITEMS_DAILY);
+    ok(new Set(dplan.review.map((r) => r.topicId)).size <= MAX_REVIEW_TOPICS, 'a daily reviews at most three topics');
+  });
+
   // ==================== C. GENERATOR SWEEP (fresh) ====================
 
   // Correct-input builder per question kind: the checker must accept its own answer.
@@ -240,7 +279,7 @@ async function run() {
   }
 
   test('generators: every topic sweeps clean across tiers and seeds', () => {
-    for (const t of topics) {
+    for (const t of allTopics) {
       for (let tier = 1; tier <= 3; tier++) {
         for (let seed = 0; seed < 40; seed++) {
           const rng = makeRng(seedFromString(`${t.id}|${tier}|${seed}`));
@@ -264,7 +303,7 @@ async function run() {
     // shared per-key deck WITHOUT replacement, so a second call — even with an
     // identical rng — continues the rotation. That statefulness is the whole
     // point (no repeated story until the pool is exhausted).
-    for (const t of topics) {
+    for (const t of allTopics) {
       for (let tier = 1; tier <= 2; tier++) {
         const seed = seedFromString(`${t.id}|${tier}|determinism`);
         const a = t.gen(makeRng(seed), tier);
@@ -277,6 +316,12 @@ async function run() {
   test('generators: tier-3 stories rotate (no immediate repeat)', () => {
     // The flip side of the exclusion above: consecutive tier-3 draws of the
     // same topic must not tell the same story twice in a row.
+    //
+    // Year 6 topics only: every Year 6 tier 3 is a scenario() pool, which is
+    // what this pins. Most Year 5 tier 3s are procedural templates ("What is
+    // 10,000 more than N?") with no deck behind them, so two identical shells
+    // in a row are a coin flip there, not a regression. They shipped that way
+    // for a whole summer; the sweep and determinism checks above cover them.
     for (const t of topics) {
       const rng = makeRng(seedFromString(t.id + '|rotate'));
       let prev = null;
@@ -432,6 +477,7 @@ async function run() {
       `CACHE_VERSION in sw.js and BUILD in shell/build.js must be the same string (BUILD is ${mods.build.BUILD})`);
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
+      "'./js/maths/content/y5.js'", "'./js/maths/content/y5a.js'", "'./js/maths/content/y5b.js'", "'./js/maths/content/y5c.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
       "'./js/ui/lesson.js'", "'./js/ui/gloss.js'", "'./js/ui/explain.js'", "'./js/ui/buddy.js'",
       "'./js/qa/tutor.js'", "'./js/qa/endpoint.js'", "'./js/tts.js'", "'./js/ui/map.js'", "'./js/ui/map-scene.js'",
@@ -1074,6 +1120,72 @@ async function run() {
     ok(!seedY6FromY5(fresh), 'a single answered question is worth more than a borrowed prior');
   });
 
+  // ------------------------------------------------- Year 5 review pool (B4)
+
+  test('y5 content: 32 topics, ids never collide with Year 6, resolvable by id and strand', () => {
+    const { Y5_TO_Y6_STRAND, y6StrandOfY5 } = mods.y5;
+    eq(y5Topics.length, 32, 'the whole Year 5 trainer came along');
+    eq(new Set(y5Topics.map((t) => t.id)).size, 32, 'no duplicate Year 5 ids');
+    const y6ids = new Set(topicOrder);
+    for (const t of y5Topics) {
+      ok(!y6ids.has(t.id), `Year 5 id ${t.id} collides with a Year 6 topic — the y5 slice keys would be ambiguous`);
+      ok(Y5_TO_Y6_STRAND[t.strand], `Year 5 strand ${t.strand} (${t.id}) has no Year 6 mapping`);
+      ok(t.explanation?.segments?.length && t.example?.steps?.length, `${t.id}: same lesson shape as Year 6 (explanation sheet, tutor notes)`);
+    }
+    // index.js resolves both years by id, but the journey stays Year 6.
+    eq(topicById('u03-column')?.shortTitle, 'Column + and −');
+    ok(!isY6Topic('u03-column') && isY6Topic('u02-addsub'));
+    ok(!topicOrder.includes('u03-column'), 'a Year 5 topic is never part of the journey');
+    // The scheduler's variety rule sees Year 6 strand names for Year 5 topics.
+    eq(journeyMeta.strandOf('u03-column'), 'fourops');
+    eq(journeyMeta.strandOf('u07-division'), 'fourops');
+    eq(journeyMeta.strandOf('u13-angle-types'), 'position');
+    eq(y6StrandOfY5('nope'), null);
+    eq(journeyMeta.strandOf('nope'), null);
+  });
+
+  test('y5-bridge: the Year 5 topics join the Year 6 review pool once, on top of real Year 6 work', () => {
+    const { seedY6FromY5, seedReviewPoolFromY5 } = mods.y5bridge;
+    const today = '2026-09-07';
+
+    // No import: nothing to seed from.
+    const bare = shellStorage.defaultState();
+    ok(!seedReviewPoolFromY5(bare, today), 'without a y5 slice there is no review pool to build');
+
+    // Two weeks of Year 6 already on the device — seedY6FromY5 would refuse, this must not.
+    const st = shellStorage.defaultState();
+    shellStorage.importY5Backup(st, y5Real({ strong: 92, weak: 35 }));
+    const y6 = st.maths.y6;
+    y6.diagnosticDone = true;
+    y6.completed.push('u01-pv10m', 'u01-round-neg', 'u02-addsub');
+    for (const id of y6.completed) y6.mastery[id] = newMastery(80);
+    y6.attempts.push({ d: '2026-09-01', t: 'u01-pv10m', tier: 1, ok: 1 });
+    ok(!seedY6FromY5(st), 'the prior migration stays locked out by real practice');
+    ok(seedReviewPoolFromY5(st, today), 'the review-pool migration is not');
+
+    eq(y6.completed.length, 3 + 32, 'every Year 5 topic counts as completed for the scheduler');
+    eq(completedY6(y6), 3, 'but the journey count still reads the three Year 6 topics');
+    eq(y6.completed.slice(-3), ['u01-pv10m', 'u01-round-neg', 'u02-addsub'],
+      'Year 5 ids go to the front: the variety lookback keeps seeing the real Year 6 history');
+    eq(y6.mastery['u01-pv100k'].score, 92, 'a Year 5 score comes along as it was');
+    eq(y6.mastery['u03-column'].score, 35);
+    eq(y6.mastery['u17-volume'].score, 50, 'a topic the backup never scored starts neutral');
+    for (const t of y5Topics) eq(y6.mastery[t.id].due, today, `${t.id} is due today`);
+    eq(y6.mastery['u02-addsub'].score, 80, 'Year 6 mastery is untouched');
+    ok(y6.y5ReviewSeeded, 'marked as migrated');
+    ok(!seedReviewPoolFromY5(st, today), 'idempotent: it runs on every launch');
+    eq(y6.completed.length, 35, 'and a second run adds nothing');
+
+    // The scheduler now draws on the whole of Year 5 on a review-only day.
+    const plan = planSession(y6, topicOrder, today, makeRng(4), journeyMeta, { allowNewTopic: false });
+    eq(plan.kind, 'review');
+    eq(plan.review.length, SESSION_ITEMS);
+    const ids = new Set(plan.review.map((r) => r.topicId));
+    eq(ids.size, 5, 'five topics on a review-only day');
+    ok([...ids].some((id) => !isY6Topic(id)), 'and Year 5 topics are among them');
+    for (const r of plan.review) ok(topicById(r.topicId)?.gen, `${r.topicId} resolves to a generator`);
+  });
+
   test('y5-bridge: a device that already sat the old check still gets the Year 5 priors', () => {
     // The check it sat is the one we decided was worthless (Year 6 material
     // before any Year 6 lesson), so diagnosticDone must not lock the device out
@@ -1100,7 +1212,9 @@ async function run() {
   });
 
   test('y5-bridge: every implemented Year 6 strand can be reached from Year 5, or is knowingly new', () => {
-    const { Y5_TO_Y6_STRAND, Y5_TOPIC_STRAND } = mods.y5bridge;
+    const { Y5_TO_Y6_STRAND } = mods.y5bridge;
+    // Since B4 the Year 5 strands come from the topic modules themselves.
+    const Y5_TOPIC_STRAND = Object.fromEntries(y5Topics.map((t) => [t.id, t.strand]));
     // Year 6 strands with no Year 5 ancestor start neutral ON PURPOSE. This
     // test exists so that adding 6B/6C topics forces a decision here rather
     // than silently seeding them with 50.

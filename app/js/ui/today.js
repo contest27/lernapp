@@ -9,7 +9,7 @@ import { planSession, pacing } from '../engine/scheduler.js';
 import { dayKey, daysBetween } from '../engine/storage.js';
 import { topicsDoneToday } from '../engine/progress.js';
 import { makeRng, seedFromString } from '../engine/rng.js';
-import { topicOrder, topicById, journeyMeta } from '../maths/content/index.js';
+import { topicOrder, topicById, journeyMeta, completedY6 } from '../maths/content/index.js';
 import { startOrResume, startFocusSession } from './session.js';
 import { dayPlan, activeDeferrals, deferTopic, undeferTopic } from '../shell/rhythm.js';
 
@@ -139,7 +139,7 @@ registerScreen('today', () => {
 
   // Curriculum progress (+ finish-by-target pace line when one is set)
   const total = topicOrder.length;
-  const done = slice.completed.length;
+  const done = completedY6(slice); // journey topics only — Year 5 review ids also live in `completed`
   const [, tm, td] = (slice.settings.targetDate || '').split('-');
   const targetLabel = td ? `${Number(td)} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(tm) - 1]}` : '';
   wrap.append(h('div', { class: 'card slim' },
