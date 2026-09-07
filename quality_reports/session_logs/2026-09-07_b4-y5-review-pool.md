@@ -21,3 +21,9 @@
 - Test change: the tier-3 rotation test stays Y6-only — most Y5 tier 3s are procedural templates without a scenario() deck (u02-pv1m: "N more/less" flips a coin), so a repeat there is not a regression.
 - Tests: 94 passed, 0 failed (sweep now 45 topics × 3 tiers × 40 seeds). Manual at 768×1024: seeded state on launch (35 completed, Y6 ids last), Today card 3/13, review session 11 items over 5 topics (all Y5, weakest first), answer accepted, explanation sheet for a Y5 topic opens, parent corner shows the "Year 5 review" table (32 rows), map still 13 stations.
 - Build/cache: lernapp-v16.
+- Committed 275a9b7, pushed to origin/main (Cloudflare Pages builds from it). The live check could not be done from this session: lernapp-e3h.pages.dev sits behind Cloudflare Access (302 to the login), and Pages posts no deployment status to GitHub. **Open for Sebastian:** relaunch the app on the iPad twice (SW updates land on the second real launch), then confirm the parent corner shows the "Year 5 review" table and a review day mixes five topics.
+
+## Next
+
+- 6B/6C content remains the open phase.
+- If the child reports a Y5 tier-3 template repeating within one sitting (max three items per topic per day), consider scenario() decks for the procedural Y5 tier 3s.
