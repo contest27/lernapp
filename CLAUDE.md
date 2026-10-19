@@ -21,6 +21,7 @@ without an explicit decision logged in MEMORY.md.
 |---|---|
 | Serve locally | `python3 tools/serve.py 8125` (no-cache; SW skipped on localhost) |
 | Tests | open `http://localhost:8125/tests/tests.html` — must show 0 failed |
+| Gate | `python tools/run_tests.py` — headless Edge runs the same test page; free, offline; exit 0 only at 0 failed |
 | Icons | `python3 tools/make_icons.py` |
 | Deploy | push to `main`; Cloudflare Pages serves `app/` + `functions/api/` → <https://lernapp-e3h.pages.dev> (GitHub Pages workflow removed 2026-08-19; the old build at contest27.github.io/lernapp is frozen) |
 
