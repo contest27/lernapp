@@ -105,6 +105,45 @@ Project-scope memory. Cross-project lessons go to `~/.claude/MEMORY.md`.
   - **[LEARN:ui] `go()` scrolls to the top**, so a list that re-renders on tap
     loses the row he just tapped. The check-in's lesson rows open in place.
 
+- **2026-11-10 — B9: four-quadrant grid for Unit 6, book 6B Unit 7 Decimals.**
+  In the order the class needs them. `coordGrid4` (vis.js) draws axes through
+  the origin; U6 L2's class task (read and plot in four quadrants) and the
+  negative-coordinate shapes of L3/L4 now have a picture, and the answer is
+  never drawn. Unit 7 = `u07-dec-place` (L1–5) + `u07-dec-ops` (L6–9) in
+  `content/y6b.js`, warm-ups for all nine lessons in `y6b-lessons-u7.js`
+  (task type per lesson inferred from its title, as in B8). PREREQ
+  `u07-dec-place ← u01-pv10m` is live. Units 8–12 wait for Sebastian's go.
+  - **[LEARN:content] A decimal answer is an integer over a power of ten.**
+    `dv(int, places)` and `shift()` in y6b.js; never float arithmetic on a
+    decimal (`0.3 * 4` = 1.2000000000000002, and the checker compares with
+    zero tolerance). A test sweeps every Y6 generator and warm-up for float
+    noise in anything the child reads.
+  - **[LEARN:ui] The pad gives answers away.** session.js shows "." only for a
+    non-integer answer and "−" only for a negative one, so a pad without them
+    says "whole" or "positive". `dnum()` (y6b.js) sets `allowDecimal` on every
+    Unit 7 number question, `cnum()` sets `allowMinus` on coordinate questions.
+    `num()` in gen.js drops unknown options, so the flag is set on the question
+    after it is built.
+  - **[LEARN:tests] SVG `getBBox()` height is the font's line box, not the
+    glyphs** (1.33 em in Segoe UI): two "−1" tick labels by the origin
+    "overlapped" with three units of white between them. The grid collision
+    test takes widths from getBBox and heights from the baseline (0.75 em up),
+    and runs in the app's font stack and in monospace.
+  - **[LEARN:tooling] A second preview server needs its own port in its
+    argument.** `serve.py` takes the port from argv, so when another session
+    holds 8125, preview_start's reassigned port never reaches it (on Windows
+    both processes bound 8125 and the pane loaded nothing). A temporary
+    launch entry on 8127 with `autoPort: false` worked. The patch-script ASCII
+    rule below bit again: an em dash in a heredoc was read as cp1252 and the
+    match failed (harmless, the patch asserts before writing).
+  - **[LEARN:tooling] The gate was flaky: `serve.py`'s listen backlog was 5.**
+    The test page imports about sixty modules at once; with the backlog full,
+    Windows refuses connections and the page reports "Failed to fetch
+    dynamically imported module" (0 passed, 1 failed). Measured: 2 of 8 runs
+    at 7f67cf5, 5 of 10 with Unit 7's two extra modules, 0 of 12 after
+    `request_queue_size = 128`. A "MODULE IMPORTS" failure that the browser
+    console cannot reproduce is this, not a syntax error.
+
 ## Learnings
 
 - (Inherited, still binding here: `Object.assign` on nested state drops new

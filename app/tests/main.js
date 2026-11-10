@@ -352,16 +352,22 @@ async function run() {
     eq(L.lessonLabel('u04-l07'), 'U4 · L7');
   });
 
-  test('lessons: every 6A lesson maps to a Y6 topic, in topic order; 6B/6C wait for content', () => {
-    for (const l of L.LESSONS.filter((x) => x.book === '6A')) {
+  test('lessons: 6A and Unit 7 map to Y6 topics, in topic order; units 8-15 wait for content', () => {
+    // Content reaches as far as the class needs it next (B9, 2026-11-10: Unit 7
+    // Decimals). Moving this line is a deliberate act when the next unit lands.
+    const covered = (l) => l.book === '6A' || l.unit === 7;
+    for (const l of L.LESSONS.filter(covered)) {
       ok(l.topicId && isY6Topic(l.topicId), `${l.id}: no Y6 topic`);
     }
     // Walking the lessons in book order visits each topic in one run, in topicOrder.
     const runs = [];
     for (const l of L.LESSONS) if (l.topicId && runs[runs.length - 1] !== l.topicId) runs.push(l.topicId);
     eq(runs, topicOrder, 'lesson ranges follow the topic spine');
-    eq(L.LESSONS.filter((l) => l.book !== '6A' && l.topicId).length, 0, 'no 6B/6C topic exists yet');
-    eq(L.previewOf('u07-l01'), null, 'no preview without content');
+    eq(L.LESSONS.filter((l) => l.unit === 7).map((l) => l.topicId),
+      ['u07-dec-place', 'u07-dec-place', 'u07-dec-place', 'u07-dec-place', 'u07-dec-place',
+        'u07-dec-ops', 'u07-dec-ops', 'u07-dec-ops', 'u07-dec-ops'], 'Unit 7: L1-5 place value and fractions, L6-9 operations');
+    eq(L.LESSONS.filter((l) => !covered(l) && l.topicId).length, 0, 'no topic beyond Unit 7 yet');
+    eq(L.previewOf('u08-l01'), null, 'no preview without content');
   });
 
   test('lessons: navigation — next, first, last, and topics taught by a lesson', () => {
@@ -375,8 +381,8 @@ async function run() {
     eq(L.topicsTaughtBy('u04-l04').includes('u04-compare'), false, 'a topic is taught only at its LAST lesson');
   });
 
-  test('lessons: units 4-6 have lesson-precise warm-ups; the rest fall back to the topic', () => {
-    for (const l of L.LESSONS.filter((x) => x.unit >= 4 && x.unit <= 6)) {
+  test('lessons: units 4-7 have lesson-precise warm-ups; the rest fall back to the topic', () => {
+    for (const l of L.LESSONS.filter((x) => x.unit >= 4 && x.unit <= 7)) {
       const p = L.previewOf(l.id);
       ok(p && p.own, `${l.id}: no lesson-precise preview`);
       ok(p.segments.length === 1 && typeof p.segments[0].text === 'string' && p.segments[0].text.length > 20,
@@ -416,6 +422,186 @@ async function run() {
         eq(p.gen(makeRng(seed), tier).prompt, p.gen(makeRng(seed), tier).prompt, `${l.id} t${tier}: not deterministic`);
       }
     }
+  });
+
+  // ==================== C2b. FOUR-QUADRANT GRID + UNIT 7 DECIMALS (B9) ====================
+
+  const minusStr = (v) => (v < 0 ? `−${-v}` : String(v));
+  const ptStr = (x, y) => `(${minusStr(x)}, ${minusStr(y)})`;
+  const plainText = (s) => String(s).replace(/<[^>]*>/g, '');
+  const Q4 = 'data-grid="q4"';
+  const U6_GRID_LESSONS = ['u06-l02', 'u06-l03', 'u06-l04'];
+
+  test('four-quadrant grid: tick labels, dots and point labels never collide, all inside the picture', () => {
+    // coordGrid4 (vis.js) for U6 L2-L4. Every grid the warm-ups and the U6 topic
+    // text build is rendered here and measured with getBBox — the standard of
+    // the number-line test: estimated widths are how unreadable pictures ship.
+    const grids = [];
+    for (const id of U6_GRID_LESSONS) {
+      const p = L.previewOf(id);
+      if (p.segments[0].svg?.includes(Q4)) grids.push([`${id} intro`, p.segments[0].svg]);
+      for (let tier = 1; tier <= 2; tier++) {
+        let n = 0;
+        for (let seed = 0; seed < 40; seed++) {
+          const q = p.gen(makeRng(seedFromString(`${id}|${tier}|${seed}`)), tier);
+          if (q.svg?.includes(Q4)) { grids.push([`${id} t${tier} s${seed}`, q.svg]); n += 1; }
+        }
+        // L2's class task IS the grid; L3/L4 use it where coordinates go negative (tier 2).
+        if (id === 'u06-l02' || tier === 2) ok(n >= 8, `${id} t${tier}: only ${n} of 40 questions draw the four-quadrant grid`);
+      }
+    }
+    ok(L.previewOf('u06-l02').segments[0].svg?.includes(Q4), 'the L2 intro shows the four quadrants');
+    for (const seg of topicById('u06-position').explanation.segments) {
+      if (seg.svg?.includes(Q4)) grids.push(['u06-position text', seg.svg]);
+    }
+    const host = document.createElement('div');
+    host.style.width = '520px';
+    document.body.append(host);
+    const box = (el) => { const b = el.getBBox(); return { x0: b.x, y0: b.y, x1: b.x + b.width, y1: b.y + b.height }; };
+    // A text's width is its getBBox width; its HEIGHT is not its getBBox height,
+    // which is the font's whole line box (1.33 em in Segoe UI) — two "−1"s near
+    // the origin "overlapped" by that measure with three units of white between
+    // the glyphs. Digits, minus signs and capitals have no descenders: the ink
+    // runs from about 0.75 em above the baseline down to the baseline.
+    const inkBox = (t) => {
+      const b = t.getBBox(), base = Number(t.getAttribute('y')), fs = Number(t.getAttribute('font-size'));
+      return { x0: b.x, x1: b.x + b.width, y0: base - 0.75 * fs, y1: base + 0.05 * fs };
+    };
+    const hit = (a, b) => a.x0 < b.x1 - 0.5 && b.x0 < a.x1 - 0.5 && a.y0 < b.y1 - 0.5 && b.y0 < a.y1 - 0.5;
+    // Measured in the app's own font stack (app.css) AND in this page's
+    // monospace, whose digits run wider: a pass in both leaves room for the
+    // iPad's SF Pro, which this machine does not have.
+    const FONTS = ['-apple-system, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif', 'ui-monospace, monospace'];
+    try {
+      for (const [where0, svg] of grids) for (const font of FONTS) {
+        const where = `${where0} [${font.split(',')[0]}]`;
+        host.style.fontFamily = font;
+        host.innerHTML = svg;
+        const [, , W, H] = host.querySelector('svg').getAttribute('viewBox').split(' ').map(Number);
+        const parts = [...host.querySelectorAll('text.tick')].map((t) => ({ s: `tick "${t.textContent}"`, b: inkBox(t) }));
+        for (const g of host.querySelectorAll('g.pt')) {
+          parts.push({ s: `dot ${g.dataset.label}`, b: box(g.querySelector('circle')) });
+          parts.push({ s: `label ${g.dataset.label}`, b: inkBox(g.querySelector('text')) });
+        }
+        ok(parts.length > 20, `${where}: no tick labels measured`);
+        for (let i = 0; i < parts.length; i++) {
+          const a = parts[i];
+          ok(a.b.x0 >= 0 && a.b.y0 >= 0 && a.b.x1 <= W && a.b.y1 <= H, `${where}: ${a.s} sticks out of the picture`);
+          for (let j = i + 1; j < parts.length; j++) {
+            ok(!hit(a.b, parts[j].b), `${where}: ${a.s} and ${parts[j].s} overlap`);
+          }
+        }
+      }
+    } finally {
+      host.remove();
+    }
+  });
+
+  test('four-quadrant grid: the point a question names is drawn where its answer says; an answer is never drawn', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    let named = 0, hidden = 0;
+    try {
+      for (const id of U6_GRID_LESSONS) {
+        const p = L.previewOf(id);
+        for (let tier = 1; tier <= 2; tier++) {
+          for (let seed = 0; seed < 40; seed++) {
+            const where = `${id} t${tier} s${seed}`;
+            const q = p.gen(makeRng(seedFromString(`${id}|${tier}|${seed}`)), tier);
+            if (!q.svg?.includes(Q4)) continue;
+            host.innerHTML = q.svg;
+            const drawn = new Map([...host.querySelectorAll('g.pt')]
+              .map((g) => [g.dataset.label, ptStr(Number(g.dataset.x), Number(g.dataset.y))]));
+            const prompt = plainText(q.prompt);
+            const answer = q.kind === 'mc' ? plainText(q.options[q.answerIndex]) : null;
+            let m;
+            if ((m = /coordinates of point ([A-Z])\?/.exec(prompt))) {
+              eq(drawn.get(m[1]), answer, `${where}: point ${m[1]} is drawn somewhere else than the answer`);
+              named += 1;
+            } else if ((m = /^Which point is at (\(.+?\))\?/.exec(prompt))) {
+              eq(drawn.get(answer), m[1], `${where}: the right letter is not drawn at ${m[1]}`);
+              named += 1;
+            } else if ((m = /^What is the ([xy])-coordinate of point ([A-Z])\?/.exec(prompt))) {
+              const g = host.querySelector(`g.pt[data-label="${m[2]}"]`);
+              eq(Number(g.dataset[m[1]]), q.answer, `${where}: the drawn ${m[1]}-coordinate is not the answer`);
+              named += 1;
+            }
+            if (/new coordinates|coordinates of D\?/.test(prompt)) {
+              ok(![...drawn.values()].includes(answer), `${where}: the answer ${answer} is drawn on the grid`);
+              hidden += 1;
+            }
+          }
+        }
+      }
+    } finally {
+      host.remove();
+    }
+    ok(named >= 30, `only ${named} grid-reading questions checked`);
+    ok(hidden >= 20, `only ${hidden} "work it out" questions checked`);
+  });
+
+  // Every Year 6 question and warm-up, for the sweeps below: [where, question].
+  function* y6Questions() {
+    for (const t of topics) {
+      for (let tier = 1; tier <= 3; tier++) {
+        for (let seed = 0; seed < 40; seed++) {
+          yield [`${t.id} t${tier} s${seed}`, t.gen(makeRng(seedFromString(`${t.id}|${tier}|noise|${seed}`)), tier), t.unit];
+        }
+      }
+    }
+    for (const l of L.LESSONS) {
+      const p = L.previewOf(l.id);
+      if (!p?.own) continue;
+      for (let tier = 1; tier <= 2; tier++) {
+        for (let seed = 0; seed < 40; seed++) {
+          yield [`${l.id} t${tier} s${seed}`, p.gen(makeRng(seedFromString(`${l.id}|${tier}|${seed}`)), tier), l.unit];
+        }
+      }
+    }
+  }
+  const placesOfAnswer = (v) => (String(v).split('.')[1] ?? '').length;
+
+  test('decimals: no float noise anywhere a child reads; number answers have at most 3 decimal places', () => {
+    // 0.1 × 3 is 0.30000000000000004 in JavaScript. Unit 7 builds every decimal
+    // as an integer over a power of ten (y6b.js); this sweeps every Year 6
+    // generator and warm-up and their texts, so a float slip anywhere shows up.
+    const noise = /\d\.\d*(0000|9999)\d/;
+    const clean = (where, s) => ok(!noise.test(String(s)), `${where}: float noise in "${plainText(s).slice(0, 90)}"`);
+    for (const [where, q] of y6Questions()) {
+      for (const s of [q.prompt, q.hint, q.explain, ...(q.options ?? []), ...(q.items ?? [])]) clean(where, s ?? '');
+      if (q.kind === 'num') ok(placesOfAnswer(q.answer) <= 3, `${where}: answer ${q.answer} has more than 3 decimal places`);
+    }
+    for (const t of topics) {
+      for (const seg of t.explanation.segments) { clean(t.id, seg.text); clean(t.id, seg.alt); }
+      for (const s of t.example.steps) clean(t.id, s);
+    }
+    for (const id of Object.keys(L.LESSON_PREVIEWS)) {
+      const p = L.previewOf(id);
+      clean(id, p.segments[0].text); clean(id, p.segments[0].alt);
+      for (const s of p.example.steps) clean(id, s);
+    }
+  });
+
+  test('decimals: a money answer is shown as £x.xx in the feedback', () => {
+    // The engine's answerText (verbatim from Y5) prints "2.7 pounds"; Unit 7
+    // teaches that this is written £2.70.
+    const { answerHtml } = mods.session;
+    eq(answerHtml({ kind: 'num', answer: 2.7, unit: 'pounds' }), '£2.70');
+    eq(answerHtml({ kind: 'num', answer: 16, unit: 'pounds' }), '£16.00');
+    eq(answerHtml({ kind: 'num', answer: 2.7, unit: 'm' }), '2.7 m', 'other units keep the engine text');
+  });
+
+  test('decimals: every Unit 7 number question offers the decimal point on the pad', () => {
+    // session.js hides "." whenever the answer is a whole number — in Unit 7,
+    // where half the answers are whole, that gives the answer away. dnum()
+    // (y6b.js) sets allowDecimal on every one of them.
+    let whole = 0, frac = 0;
+    for (const [where, q, unit] of y6Questions()) {
+      if (unit !== 7 || q.kind !== 'num') continue;
+      ok(q.allowDecimal === true, `${where}: the pad would hide the decimal point`);
+      if (Number.isInteger(q.answer)) whole += 1; else frac += 1;
+    }
+    ok(whole > 20 && frac > 20, `Unit 7 should mix whole and decimal answers (whole ${whole}, decimal ${frac})`);
   });
 
   // ==================== C3. CLASS TRACKER (maths/school.js, B8) ====================
@@ -514,9 +700,10 @@ async function run() {
 
   test('tracker: a next lesson without content is a review round; the end of the book has no target', () => {
     const slice = trackerSlice();
-    S.applyCheckin(slice, '2026-11-10', { lesson: 'u06-l04', finished: false });
+    // The first lesson without content: Unit 8 since B9 (it was Unit 7 before).
+    S.applyCheckin(slice, '2026-11-10', { lesson: 'u07-l09', finished: false });
     const p = S.planPreview(slice, '2026-11-10', makeRng(2));
-    eq(p.target, 'u07-l01');
+    eq(p.target, 'u08-l01');
     eq(p.hasPreview, false);
     eq(p.introAt, null);
     eq(p.items.filter((i) => i.part === 'catchup').length, 2, 'today\'s unfinished pages still come first');
@@ -714,6 +901,8 @@ async function run() {
       `CACHE_VERSION in sw.js and BUILD in shell/build.js must be the same string (BUILD is ${mods.build.BUILD})`);
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
+      "'./js/maths/content/lessons.js'", "'./js/maths/content/y6a-lessons-u4.js'", "'./js/maths/content/y6a-lessons-u5u6.js'",
+      "'./js/maths/content/y6b.js'", "'./js/maths/content/y6b-lessons-u7.js'", "'./js/maths/content/vis.js'",
       "'./js/maths/content/y5.js'", "'./js/maths/content/y5a.js'", "'./js/maths/content/y5b.js'", "'./js/maths/content/y5c.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
       "'./js/ui/lesson.js'", "'./js/ui/gloss.js'", "'./js/ui/explain.js'", "'./js/ui/buddy.js'",
@@ -1001,6 +1190,8 @@ async function run() {
         last = s;
       }
     }
+    // The spine's decimals edge went live with Unit 7 (B9).
+    eq(PREREQS['u07-dec-place'], ['u01-pv10m'], 'decimals build on place value to 10,000,000');
     // Every prereq edge points at an existing, earlier topic.
     for (const [id, reqs] of Object.entries(PREREQS)) {
       ok(topicById(id), `PREREQS names unknown topic ${id}`);

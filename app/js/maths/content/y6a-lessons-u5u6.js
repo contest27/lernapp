@@ -9,12 +9,16 @@
 // - Only the passed rng is used, and no scenario() decks: one seed, one prompt.
 // - The fraction pad takes n/d only. A mixed number is an MC option built with
 //   mixed(); a coordinate pair is an MC option, or one coordinate is asked via num().
-// - coordGrid() draws the first quadrant only, so every question with negative
-//   coordinates (u06-l02, and the four-quadrant shapes of l03/l04) has no diagram.
+// - First-quadrant questions draw on coordGrid(); questions with negative
+//   coordinates draw on coordGrid4() (B9, 2026-11-10): range 5, every drawn
+//   point within ±4, so the dots clear the tick labels beside the axes and the
+//   point labels stay inside the picture. The answer is never drawn.
+// - A coordinate typed on the pad offers the minus key whether or not the
+//   answer is negative (cnum) — a pad without it says "positive".
 // - Displayed negatives use the real minus sign (neg / pt below).
 
 import { num, tf, mc, mcFrom, frac, fr, ri, pick, shuffle, distinctInts } from './gen.js';
-import { fracBar, barModel, coordGrid } from './vis.js';
+import { fracBar, barModel, coordGrid, coordGrid4 } from './vis.js';
 import { gcd, simplify, mixed } from './y6a-frac.js';
 
 const NAMES = ['Ava', 'Ben', 'Chloe', 'Dev', 'Emma', 'Finn', 'Grace', 'Hugo', 'Isla', 'Jack'];
@@ -32,6 +36,16 @@ const neg = (v) => (v < 0 ? `−${-v}` : String(v));
 const pt = (x, y) => `(${neg(x)}, ${neg(y)})`;
 const sq = (k) => (k === 1 ? '1 square' : `${k} squares`);
 const R = (n, d) => [fr(n, d), n, d];
+// Chebyshev distance >= 2: two drawn points whose labels cannot meet.
+const apart = (p, q) => Math.max(Math.abs(p[0] - q[0]), Math.abs(p[1] - q[1])) >= 2;
+const inGrid = (...vs) => vs.every((v) => v >= -4 && v <= 4);
+
+// A coordinate question for the pad: the minus key is always offered.
+function cnum(prompt, answer, opts) {
+  const q = num(prompt, answer, opts);
+  q.allowMinus = true;
+  return q;
+}
 
 // Draw values with make() until ok() holds. make() only uses the rng it closes
 // over, so this is deterministic. The fallback satisfies ok() by construction.
@@ -847,8 +861,9 @@ export const lessonPreviewsU5U6 = {
 
   'u06-l02': {
     intro: {
-      text: 'The <b>x-axis</b> and the <b>y-axis</b> also go past 0 into <b>negative numbers</b>. They cross at the <b>origin</b>, (0, 0), and cut the grid into four <b>quadrants</b>. (−3, 2) means 3 to the left, then 2 up. (2, −4) means 2 to the right, then 4 down.',
+      text: 'The <b>x-axis</b> and the <b>y-axis</b> also go past 0 into <b>negative numbers</b>. They cross at the <b>origin</b>, (0, 0), and cut the grid into four <b>quadrants</b>. A is at (−3, 2): 3 to the left, then 2 up. B is at (2, −4): 2 to the right, then 4 down.',
       alt: 'A negative x-coordinate means go left. A negative y-coordinate means go down. It is still across first, then up or down.',
+      svg: coordGrid4(5, [[-3, 2, 'A'], [2, -4, 'B']]),
     },
     example: {
       steps: [
@@ -860,7 +875,7 @@ export const lessonPreviewsU5U6 = {
     },
     gen(rng, tier) {
       const Q = ['top right', 'top left', 'bottom left', 'bottom right'];
-      const shape = ri(rng, 1, 3);
+      const shape = ri(rng, 1, 4);
       const describe = (x, y) => `${sq(Math.abs(x))} to the ${x > 0 ? 'right' : 'left'} of the y-axis and ${sq(Math.abs(y))} ${y > 0 ? 'above' : 'below'} the x-axis`;
       const fromWords = (max) => {
         const x = ri(rng, 1, max) * pick(rng, [1, -1]), y = ri(rng, 1, max) * pick(rng, [1, -1]);
@@ -869,25 +884,71 @@ export const lessonPreviewsU5U6 = {
             tier, hint: 'Right and above are positive. Left and below are negative.',
             explain: `x is ${x > 0 ? 'positive (right)' : 'negative (left)'} and y is ${y > 0 ? 'positive (above)' : 'negative (below)'}: ${pt(x, y)}.` });
       };
+      // A point on the four-quadrant grid, off both axes and NOT in the top
+      // right (that was lesson 1), x different from y so a swapped answer is wrong.
+      const offQ1 = () => draw(() => [ri(rng, -4, 4), ri(rng, -4, 4)],
+        ([x, y]) => x !== 0 && y !== 0 && (x < 0 || y < 0) && x !== y, [-3, 2]);
+      const where = (x, y) => `${sq(Math.abs(x))} to the ${x > 0 ? 'right' : 'left'}, then ${sq(Math.abs(y))} ${y > 0 ? 'up' : 'down'}`;
       if (tier === 1) {
         if (shape === 1) {
+          // The class task: read the coordinates of P off the grid.
+          const [x, y] = offQ1();
+          return mcFrom(rng, 'What are the coordinates of point P?', pt(x, y), [pt(y, x), pt(-x, y), pt(x, -y), pt(-x, -y)], {
+            tier, svg: coordGrid4(5, [[x, y, 'P']]),
+            hint: 'Start at the origin. Go along first: right is positive, left is negative. Then up is positive, down is negative.',
+            explain: `From the origin, P is ${where(x, y)}. So P is at ${pt(x, y)}.` });
+        }
+        if (shape === 2) {
+          const [x, y] = offQ1();
+          const askX = rng() < 0.5, ans = askX ? x : y;
+          return cnum(`What is the ${askX ? 'x' : 'y'}-coordinate of point P?`, ans, {
+            tier, svg: coordGrid4(5, [[x, y, 'P']]),
+            hint: askX ? 'How far right or left of the origin is P? Left is negative.' : 'How far up or down from the origin is P? Down is negative.',
+            explain: `P is ${where(x, y)}, so it is at ${pt(x, y)}. The ${askX ? 'x' : 'y'}-coordinate is ${neg(ans)}.` });
+        }
+        if (shape === 3) {
           const x = ri(rng, 1, 6) * pick(rng, [1, -1]), y = ri(rng, 1, 6) * pick(rng, [1, -1]);
           const i = y > 0 ? (x > 0 ? 0 : 1) : (x < 0 ? 2 : 3);
           return mc(`Which quadrant is the point ${pt(x, y)} in?`, Q, i, {
             tier, hint: 'A negative x means left of the y-axis. A negative y means below the x-axis.',
             explain: `x = ${neg(x)}, so go ${x > 0 ? 'right' : 'left'}. y = ${neg(y)}, so go ${y > 0 ? 'up' : 'down'}. That is the ${Q[i]} quadrant.` });
         }
-        if (shape === 2) {
+        if (rng() < 0.5) {
           const x = ri(rng, 1, 6) * pick(rng, [1, -1]), y = ri(rng, 1, 6) * pick(rng, [1, -1]);
           const askX = rng() < 0.5, ans = askX ? x : y;
-          return num(`A point is ${describe(x, y)}. What is its ${askX ? 'x' : 'y'}-coordinate?`, ans, {
+          return cnum(`A point is ${describe(x, y)}. What is its ${askX ? 'x' : 'y'}-coordinate?`, ans, {
             tier, hint: askX ? 'Right is positive. Left is negative.' : 'Above is positive. Below is negative.',
             explain: `The ${askX ? 'x' : 'y'}-coordinate is ${neg(ans)}. The point is ${pt(x, y)}.` });
         }
         return fromWords(5);
       }
-      if (shape === 1) return fromWords(9);
+      if (shape === 1) {
+        // Plot: which marked point is at (x, y)? The other three are the
+        // classic slips — x and y swapped, the sign of x wrong, the sign of y wrong.
+        const [x, y] = draw(() => [ri(rng, -4, 4), ri(rng, -4, 4)],
+          ([a, b]) => a !== 0 && b !== 0 && (a < 0 || b < 0) && Math.abs(a - b) >= 2, [-3, 1]);
+        const P = [x, y], labels = ['A', 'B', 'C', 'D'];
+        const pts = shuffle(rng, [P, [y, x], [-x, y], [x, -y]]);
+        const i = pts.indexOf(P);
+        return mc(`Which point is at ${pt(x, y)}?`, labels, i, {
+          tier, svg: coordGrid4(5, pts.map((p, j) => [p[0], p[1], labels[j]])),
+          hint: 'Go along the x-axis first (left for negative), then up or down (down for negative).',
+          explain: `${labels[i]} is ${where(x, y)} from the origin, so it is at ${pt(x, y)}.` });
+      }
       if (shape === 2) {
+        // Read one of three marked points, at least 2 squares apart.
+        const P = offQ1(), labels = ['A', 'B', 'C'];
+        const pool = [];
+        for (let i = -4; i <= 4; i++) for (let j = -4; j <= 4; j++) if (i && j && apart([i, j], P)) pool.push([i, j]);
+        const [o1, ...rest] = shuffle(rng, pool), o2 = rest.find((o) => apart(o, o1));
+        const pts = shuffle(rng, [P, o1, o2]), L = labels[pts.indexOf(P)];
+        return mcFrom(rng, `What are the coordinates of point ${L}?`, pt(...P), [pt(P[1], P[0]), pt(...o1), pt(...o2), pt(-P[0], P[1])], {
+          tier, svg: coordGrid4(5, pts.map((p, j) => [p[0], p[1], labels[j]])),
+          hint: `Find ${L}. Go along first, then up or down. Left and down are negative.`,
+          explain: `${L} is ${where(...P)} from the origin, so it is at ${pt(...P)}.` });
+      }
+      if (shape === 3) {
+        if (rng() < 0.5) return fromWords(9);
         const m = () => ri(rng, 1, 8);
         const pts = [[m(), m()], [-m(), m()], [-m(), -m()], [m(), -m()]];   // in the order of Q
         const i = ri(rng, 0, 3);
@@ -922,18 +983,19 @@ export const lessonPreviewsU5U6 = {
     gen(rng, tier) {
       const shape = ri(rng, 1, 3);
       const DIRS = { right: [1, 0], left: [-1, 0], up: [0, 1], down: [0, -1] };
+      // A on the four-quadrant grid with the mirror axis drawn; the image is not.
       const reflect = (x, y) => {
         const inX = rng() < 0.5, [rx, ry] = inX ? [x, -y] : [-x, y];
         return mcFrom(rng, `Point A is at ${pt(x, y)}. Reflect it in the ${inX ? 'x' : 'y'}-axis. What are the new coordinates?`, pt(rx, ry),
           [inX ? pt(-x, y) : pt(x, -y), pt(-x, -y), pt(ry, rx), pt(x, y)], {
-            tier,
+            tier, svg: coordGrid4(5, [[x, y, 'A']], { mirror: inX ? 'x' : 'y' }),
             hint: inX ? 'Reflecting in the x-axis changes the sign of the y-coordinate only.' : 'Reflecting in the y-axis changes the sign of the x-coordinate only.',
             explain: inX
               ? `In the x-axis, y = ${neg(y)} becomes ${neg(-y)}, and x stays ${neg(x)}: ${pt(rx, ry)}.`
               : `In the y-axis, x = ${neg(x)} becomes ${neg(-x)}, and y stays ${neg(y)}: ${pt(rx, ry)}.` });
       };
       if (tier === 1) {
-        if (shape === 3) return reflect(ri(rng, 1, 6), ri(rng, 1, 6));
+        if (shape === 3) return reflect(ri(rng, 1, 4), ri(rng, 1, 4));
         // One move, staying on the first-quadrant grid.
         const x = ri(rng, 1, 7), y = ri(rng, 1, 7), dir = pick(rng, ['right', 'left', 'up', 'down']);
         const room = { right: 8 - x, left: x, up: 8 - y, down: y }[dir];
@@ -958,24 +1020,35 @@ export const lessonPreviewsU5U6 = {
           explain: moved ? why : `Moving ${dir} does not change the ${askX ? 'x' : 'y'}-coordinate, so it stays ${ans}. The new point is ${pt(nx, ny)}.` });
       }
       if (shape === 1) {
-        const px = ri(rng, -5, 5), py = ri(rng, -5, 5), a = ri(rng, 1, 6), b = ri(rng, 1, 6);
-        const sx = pick(rng, [1, -1]), sy = pick(rng, [1, -1]);
+        // P is drawn, its image is not; both stay on the grid and the move
+        // crosses at least one axis.
+        const { px, py, a, b, sx, sy } = draw(() => ({
+          px: ri(rng, -4, 4), py: ri(rng, -4, 4), a: ri(rng, 1, 6), b: ri(rng, 1, 6),
+          sx: pick(rng, [1, -1]), sy: pick(rng, [1, -1]),
+        }), (v) => inGrid(v.px + v.sx * v.a, v.py + v.sy * v.b)
+          && (Math.sign(v.px + v.sx * v.a) !== Math.sign(v.px) || Math.sign(v.py + v.sy * v.b) !== Math.sign(v.py)),
+        { px: 2, py: 1, a: 4, b: 3, sx: -1, sy: 1 });
         const nx = px + sx * a, ny = py + sy * b;
         return mcFrom(rng, `Point P is at ${pt(px, py)}. Translate it ${sq(a)} ${sx > 0 ? 'right' : 'left'} and ${sq(b)} ${sy > 0 ? 'up' : 'down'}. What are the new coordinates?`, pt(nx, ny),
           [pt(px - sx * a, ny), pt(nx, py - sy * b), pt(px - sx * a, py - sy * b), pt(nx, py)], {
-            tier, hint: 'Right and left change x. Up and down change y.',
+            tier, svg: coordGrid4(5, [[px, py, 'P']]),
+            hint: 'Right and left change x. Up and down change y. You can count the squares on the grid.',
             explain: `x: ${neg(px)} ${sx > 0 ? '+' : '−'} ${a} = ${neg(nx)}. y: ${neg(py)} ${sy > 0 ? '+' : '−'} ${b} = ${neg(ny)}. The new point is ${pt(nx, ny)}.` });
       }
-      if (shape === 2) return reflect(ri(rng, 1, 8) * pick(rng, [1, -1]), ri(rng, 1, 8) * pick(rng, [1, -1]));
-      // Describe the translation from A to B.
-      const ax = ri(rng, -4, 4), ay = ri(rng, -4, 4);
-      const dx = ri(rng, 1, 5) * pick(rng, [1, -1]), dy = ri(rng, 1, 5) * pick(rng, [1, -1]);
+      if (shape === 2) return reflect(ri(rng, 1, 4) * pick(rng, [1, -1]), ri(rng, 1, 4) * pick(rng, [1, -1]));
+      // Describe the translation from A to B, both drawn, at least 2 squares apart.
+      const { ax, ay, dx, dy } = draw(() => ({
+        ax: ri(rng, -4, 4), ay: ri(rng, -4, 4),
+        dx: ri(rng, 1, 5) * pick(rng, [1, -1]), dy: ri(rng, 1, 5) * pick(rng, [1, -1]),
+      }), (v) => inGrid(v.ax + v.dx, v.ay + v.dy) && Math.max(Math.abs(v.dx), Math.abs(v.dy)) >= 2,
+      { ax: -3, ay: 2, dx: 5, dy: -4 });
       const bx = ax + dx, by = ay + dy;
       const desc = (h, v) => `${Math.abs(h)} ${h > 0 ? 'right' : 'left'}, ${Math.abs(v)} ${v > 0 ? 'up' : 'down'}`;
       const swapped = `${Math.abs(dy)} ${dx > 0 ? 'right' : 'left'}, ${Math.abs(dx)} ${dy > 0 ? 'up' : 'down'}`;
       return mcFrom(rng, `Point A ${pt(ax, ay)} is translated to point B ${pt(bx, by)}. Which describes the translation?`, desc(dx, dy),
         [desc(-dx, -dy), swapped, desc(-dx, dy), desc(dx, -dy)], {
-          tier, hint: 'Compare the x-coordinates for right or left, then the y-coordinates for up or down.',
+          tier, svg: coordGrid4(5, [[ax, ay, 'A'], [bx, by, 'B']]),
+          hint: 'Compare the x-coordinates for right or left, then the y-coordinates for up or down.',
           explain: `x goes from ${neg(ax)} to ${neg(bx)}: ${Math.abs(dx)} ${dx > 0 ? 'right' : 'left'}. y goes from ${neg(ay)} to ${neg(by)}: ${Math.abs(dy)} ${dy > 0 ? 'up' : 'down'}.` });
     },
   },
@@ -1022,28 +1095,33 @@ export const lessonPreviewsU5U6 = {
           tier, svg, hint: 'D lines up with A on one side and with C on the other side.', explain: vertexWhy(A, C, D) });
       }
       if (shape === 1) {
+        // A, B and C are drawn, D is not.
         const square = rng() < 0.4;
-        const x0 = ri(rng, -5, 1), y0 = ri(rng, -5, 1), w = ri(rng, 2, 6), h = square ? w : ri(rng, 2, 6);
+        const x0 = ri(rng, -4, 1), w = ri(rng, 2, Math.min(6, 4 - x0));
+        const h = square ? w : ri(rng, 2, 6);
+        const y0 = ri(rng, -4, Math.min(1, 4 - h));
         const [A, B, C, D] = rectCycle(rng, x0, y0, w, h);
         return mcFrom(rng, `ABCD is a ${square ? 'square' : 'rectangle'}. A is at ${pt(...A)}, B is at ${pt(...B)} and C is at ${pt(...C)}. What are the coordinates of D?`, pt(...D),
           [pt(D[1], D[0]), pt(-D[0], D[1]), pt(D[0], -D[1]), pt(D[0] + 1, D[1]), pt(D[0], D[1] + 1), pt(D[0] - 1, D[1])], {
-            tier, hint: 'D lines up with A on one side and with C on the other side.', explain: vertexWhy(A, C, D) });
+            tier, svg: coordGrid4(5, [[...A, 'A'], [...B, 'B'], [...C, 'C']]),
+            hint: 'D lines up with A on one side and with C on the other side.', explain: vertexWhy(A, C, D) });
       }
       if (shape === 2) {
         // A side that crosses an axis: count to 0, then on from 0.
-        const across = rng() < 0.5, c = ri(rng, -5, 5), lo = -ri(rng, 1, 6), hi = ri(rng, 1, 6);
+        const across = rng() < 0.5, c = ri(rng, -4, 4), lo = -ri(rng, 1, 4), hi = ri(rng, 1, 4);
         const A = across ? [lo, c] : [c, lo], B = across ? [hi, c] : [c, hi];
         return num(`AB is one side of a square. A is at ${pt(...A)} and B is at ${pt(...B)}. How many squares long is each side of the square?`, hi - lo, {
-          tier,
+          tier, svg: coordGrid4(5, [[...A, 'A'], [...B, 'B']]),
           hint: across
             ? `A and B have the same y-coordinate. Count from ${neg(lo)} to 0, then from 0 to ${hi}.`
             : `A and B have the same x-coordinate. Count from ${neg(lo)} to 0, then from 0 to ${hi}.`,
           explain: `From ${neg(lo)} to 0 is ${-lo}. From 0 to ${hi} is ${hi}. ${-lo} + ${hi} = ${hi - lo}, so each side is ${hi - lo} squares long.` });
       }
-      const x0 = ri(rng, -4, 2), y0 = ri(rng, -4, 2), w = ri(rng, 2, 6), h = ri(rng, 2, 6);
+      const x0 = ri(rng, -4, 2), y0 = ri(rng, -4, 2);
+      const w = ri(rng, 2, Math.min(6, 4 - x0)), h = ri(rng, 2, Math.min(6, 4 - y0));
       const cs = [[x0, y0], [x0 + w, y0], [x0 + w, y0 + h], [x0, y0 + h]];
-      return num(`A rectangle has vertices at ${pt(...cs[0])}, ${pt(...cs[1])}, ${pt(...cs[2])} and ${pt(...cs[3])}. Each unit on the axes is 1 cm. What is the perimeter of the rectangle?`, 2 * (w + h), {
-        unit: 'cm', tier,
+      return num(`Rectangle ABCD has vertices A ${pt(...cs[0])}, B ${pt(...cs[1])}, C ${pt(...cs[2])} and D ${pt(...cs[3])}. Each unit on the axes is 1 cm. What is the perimeter of the rectangle?`, 2 * (w + h), {
+        unit: 'cm', tier, svg: coordGrid4(5, cs.map((p, j) => [...p, 'ABCD'[j]]), { poly: true }),
         hint: 'Find the width (look at the x-coordinates) and the height (look at the y-coordinates) first.',
         explain: `Width: from ${neg(x0)} to ${neg(x0 + w)} is ${w} cm. Height: from ${neg(y0)} to ${neg(y0 + h)} is ${h} cm. Perimeter = ${w} + ${h} + ${w} + ${h} = ${2 * (w + h)} cm.` });
     },

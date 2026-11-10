@@ -78,6 +78,8 @@ B0 scaffold ✓ → B1 Y6 spine ✓ → B2 content 6A ✓ (6B/6C open) → B3 di
 B7 Y5 priors + server-key gates + Gemini speech ✓ (2026-08-25) →
 B4 Y5 topics as review material ✓ (2026-09-07; review-only days spread over 5 topics) →
 B8 class tracker + tomorrow's-lesson warm-up ✓ (2026-11-10; lesson register
-`content/lessons.js`, lesson-precise previews U4–U6, `maths/school.js`, English hidden) —
-open: 6B/6C (the class reaches Unit 7 around early January).
+`content/lessons.js`, lesson-precise previews U4–U6, `maths/school.js`, English hidden) →
+B9 four-quadrant grid for U6 L2–L4 + book 6B Unit 7 Decimals ✓ (2026-11-10;
+`coordGrid4` in vis.js, topics in `content/y6b.js`, warm-ups `y6b-lessons-u7.js`) —
+open: Units 8–12 (6B) and 6C; Unit 8 follows about two school weeks after Unit 7.
 Plan of record: `~/.claude/plans/inherited-crafting-lantern.md`.

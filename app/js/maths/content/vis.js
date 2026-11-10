@@ -200,6 +200,122 @@ export function coordGrid(size, points = [], { poly = false, vline = null } = {}
   return `<svg ${NS} viewBox="0 0 ${W} ${H}">${grid}${marks}</svg>`;
 }
 
+// DIVERGED 2026-11-10 (Y6 only, no upstream): four-quadrant coordinate grid
+// for Unit 6 lessons 2–4, where coordGrid's first quadrant cannot show a
+// point like (−3, 2).
+//
+// Axes from −range to range cross at the origin; every integer is labelled
+// beside its axis (real minus sign, white halo so the grid lines do not cut
+// through the digits). The origin gets no "0": beside the x-axis "−1" it read
+// as "−10" in the first render, and the crossing of the axes marks it anyway.
+// A polygon is drawn UNDER the axes and labels. Range 5 is the size the
+// warm-ups use: with points kept within ±4, a dot one square from an axis
+// still clears the tick labels in the band beside it, and the point label —
+// pushed AWAY from the origin — never lands in that band at all. The tests
+// measure this for every grid the warm-ups build.
+//
+// Each point is a <g data-x data-y data-label> so the tests can check that the
+// point a question names is drawn where its answer says. `mirror: 'x' | 'y'`
+// draws that axis as a red dashed mirror line for reflections.
+export function coordGrid4(range, points = [], { poly = false, mirror = null } = {}) {
+  // pad 18 and 9.5-unit ticks: a dot one square left of the y-axis, or on it,
+  // keeps a visible gap to the tick label beside it (first render: ~1 unit).
+  const W = 260, H = 260, pad = 18;
+  const cell = (W - 2 * pad) / (2 * range);
+  const ox = W / 2, oy = H / 2;
+  const X = (x) => ox + x * cell, Y = (y) => oy - y * cell;
+  const minus = (v) => (v < 0 ? `−${-v}` : String(v));
+  const halo = 'stroke="#fff" stroke-width="3" paint-order="stroke"';
+  const every = cell >= 16 ? 1 : 2;
+  let grid = '', labels = '';
+  for (let i = -range; i <= range; i++) {
+    grid += `<line x1="${X(i)}" y1="${Y(range)}" x2="${X(i)}" y2="${Y(-range)}" stroke="#e2e8f0"/>
+      <line x1="${X(-range)}" y1="${Y(i)}" x2="${X(range)}" y2="${Y(i)}" stroke="#e2e8f0"/>`;
+    if (i === 0 || i % every !== 0) continue;
+    labels += `<text class="tick" x="${X(i)}" y="${oy + 13.5}" text-anchor="middle" font-size="9.5" ${halo}>${minus(i)}</text>
+      <text class="tick" x="${ox - 5}" y="${Y(i) + 3.4}" text-anchor="end" font-size="9.5" ${halo}>${minus(i)}</text>`;
+  }
+  const shape = poly && points.length > 1
+    ? `<polygon points="${points.map((p) => `${X(p[0])},${Y(p[1])}`).join(' ')}" fill="#bae6fd88" stroke="#0369a1" stroke-width="2"/>`
+    : '';
+  const axes = `<line x1="${X(-range) - 6}" y1="${oy}" x2="${X(range) + 6}" y2="${oy}" stroke="#334155" stroke-width="2"/>
+    <line x1="${ox}" y1="${Y(range) - 6}" x2="${ox}" y2="${Y(-range) + 6}" stroke="#334155" stroke-width="2"/>
+    <text x="${X(range) + 9}" y="${oy + 4}" font-size="12" font-style="italic" font-weight="700">x</text>
+    <text x="${ox + 6}" y="${Y(range) - 7}" font-size="12" font-style="italic" font-weight="700">y</text>`;
+  let marks = '';
+  if (mirror === 'x') {
+    marks += `<line x1="${X(-range) - 6}" y1="${oy}" x2="${X(range) + 6}" y2="${oy}" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6 4"/>`;
+  } else if (mirror === 'y') {
+    marks += `<line x1="${ox}" y1="${Y(range) - 6}" x2="${ox}" y2="${Y(-range) + 6}" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6 4"/>`;
+  }
+  let pts = '';
+  points.forEach((p, i) => {
+    const [x, y] = p, label = p[2] ?? String.fromCharCode(65 + i);
+    const lx = x < 0 ? X(x) - 8 : X(x) + 8, ly = y < 0 ? Y(y) + 15 : Y(y) - 8;
+    pts += `<g class="pt" data-x="${x}" data-y="${y}" data-label="${label}">
+      <circle cx="${X(x)}" cy="${Y(y)}" r="4.5" fill="#f87171" stroke="#7f1d1d"/>
+      <text x="${lx}" y="${ly}" text-anchor="${x < 0 ? 'end' : 'start'}" font-size="12" font-weight="700" ${halo}>${label}</text></g>`;
+  });
+  return `<svg ${NS} viewBox="0 0 ${W} ${H}" data-grid="q4">${grid}${shape}${axes}${marks}${labels}${pts}</svg>`;
+}
+
+// DIVERGED 2026-11-10 (Y6 Unit 7): a place-value chart with FIXED columns and
+// one row per number, the digits lined up on the decimal point — the picture
+// for × and ÷ by 10, 100 and 1,000, where the digits move and the point stays.
+// (pvGrid sizes its columns to one number, so two of them do not line up.)
+//
+// rows: numbers or decimal strings ('0.450' keeps its zero). The columns fit
+// every row, at least from 10^high down to 10^−low. tags: optional text at
+// the left of each row ("× 100").
+export function pvChart(rows, { high = 1, low = 1, tags = null } = {}) {
+  const NAMES = { 6: 'M', 5: 'HTh', 4: 'TTh', 3: 'Th', 2: 'H', 1: 'T', 0: 'O', '-1': 'Tth', '-2': 'Hth', '-3': 'Thth' };
+  const split = rows.map((r) => {
+    const [ip, fp = ''] = String(r).split('.');
+    return { ip, fp };
+  });
+  const hi = Math.max(high, ...split.map((s) => s.ip.length - 1));
+  const lo = Math.max(low, ...split.map((s) => s.fp.length));
+  const places = [];
+  for (let p = hi; p >= -lo; p--) places.push(p);
+  const tagW = tags ? 56 : 0;
+  const cw = Math.min(40, (300 - tagW) / places.length), rh = 32, top = 28;
+  const W = 16 + tagW + places.length * cw, H = top + rows.length * rh + 8;
+  const colX = (p) => 8 + tagW + (hi - p) * cw;
+  let out = '';
+  for (const p of places) {
+    out += `<rect x="${colX(p)}" y="4" width="${cw}" height="24" fill="${p < 0 ? '#fde68a' : '#e0f2fe'}" stroke="#334155"/>
+      <text x="${colX(p) + cw / 2}" y="21" text-anchor="middle" font-size="11" font-weight="700">${NAMES[p]}</text>`;
+  }
+  split.forEach(({ ip, fp }, r) => {
+    const y = top + r * rh;
+    for (const p of places) out += `<rect x="${colX(p)}" y="${y}" width="${cw}" height="${rh}" fill="#fff" stroke="#334155"/>`;
+    [...ip].forEach((d, i) => {
+      const p = ip.length - 1 - i;
+      out += `<text x="${colX(p) + cw / 2}" y="${y + 22}" text-anchor="middle" font-size="17">${d}</text>`;
+    });
+    [...fp].forEach((d, i) => {
+      out += `<text x="${colX(-1 - i) + cw / 2}" y="${y + 22}" text-anchor="middle" font-size="17">${d}</text>`;
+    });
+    if (fp.length) out += `<circle cx="${colX(0) + cw}" cy="${y + rh - 7}" r="2.8" fill="#0f172a"/>`;
+    if (tags?.[r]) out += `<text x="${8 + tagW - 6}" y="${y + 21}" text-anchor="end" font-size="12" font-weight="700" fill="#0369a1">${tags[r]}</text>`;
+  });
+  return `<svg ${NS} viewBox="0 0 ${W} ${H}">${out}</svg>`;
+}
+
+// DIVERGED 2026-11-10 (Y6 Unit 7): a hundred square with n hundredths shaded,
+// filled a whole column (one tenth) at a time — so 0.3 is three full columns
+// and 0.35 is three columns and five more squares.
+export function hundredSquare(n, { color = '#86efac' } = {}) {
+  const c = 13, x0 = 6, y0 = 6;
+  let cells = '';
+  for (let i = 0; i < 100; i++) {
+    const col = Math.floor(i / 10), row = i % 10;
+    cells += `<rect x="${x0 + col * c}" y="${y0 + row * c}" width="${c}" height="${c}" fill="${i < n ? color : '#f8fafc'}" stroke="#94a3b8" stroke-width="0.8"/>`;
+  }
+  return `<svg ${NS} viewBox="0 0 142 142">${cells}
+    <rect x="${x0}" y="${y0}" width="${10 * c}" height="${10 * c}" fill="none" stroke="#334155" stroke-width="2"/></svg>`;
+}
+
 // Simple bar chart for statistics questions.
 export function barChart(labels, values, { unit = '' } = {}) {
   const W = 320, H = 180, x0 = 40, y0 = 140, bw = (W - x0 - 12) / labels.length;

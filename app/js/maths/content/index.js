@@ -8,6 +8,7 @@
 // become two clean islands instead of one torn one.
 
 import { topics6a } from './y6a.js';
+import { topics6b } from './y6b.js';
 import { y5Topics, y5TopicById, y6StrandOfY5 } from './y5.js';
 
 export const STRANDS = {
@@ -28,7 +29,7 @@ export const STRANDS = {
 // `topics` / `topicOrder` are the Year 6 JOURNEY only: the map, the pacing and
 // the progress counts all read them. The Year 5 topics (content/y5.js) are
 // review material — resolvable by id, never part of the journey.
-export const topics = [...topics6a];
+export const topics = [...topics6a, ...topics6b];
 export const topicOrder = topics.map((t) => t.id);
 export { y5Topics };
 
@@ -53,6 +54,7 @@ export function completedY6(slice) {
 // implemented yet live in the spine doc, not here.
 export const PREREQS = {
   'u05-frac-amount': ['u02-divide'], // fraction of an amount: divide, then multiply
+  'u07-dec-place': ['u01-pv10m'], // the columns carry on past the decimal point
 };
 
 // Handed to the scheduler so the engine stays free of content imports.

@@ -30,9 +30,14 @@ two clean islands instead of one torn one.
 | u05-frac-amount | fractions | 5 | fractions of amounts + problem solving (L8–9) |
 | u06-position | position | 6 | all four quadrants, translations, reflections (L1–4) |
 
-## Book 6B — ~12 topics (provisional, finalised in its own phase)
+## Book 6B — ~12 topics (Unit 7 final since B9, 2026-11-10; the rest provisional)
 
-u07-dec-place, u07-dec-ops (decimals) · u08-pct-equiv, u08-pct-of
+| id | strand | unit | scope (lessons) |
+|---|---|---|---|
+| u07-dec-place | decimals | 7 | × and ÷ by 10, 100, 1,000 and their multiples; decimals as fractions; fractions as decimals (L1–5) |
+| u07-dec-ops | decimals | 7 | multiplying and dividing decimals by whole numbers (L6–9) |
+
+Still provisional: u08-pct-equiv, u08-pct-of
 (percentages) · u09-alg-rules, u09-alg-solve, u09-alg-pairs (algebra) ·
 u10-imperial (measure) · u11-area-perim, u11-area-tri, u11-volume (measure) ·
 u12-ratio, u12-scale (ratio)
@@ -46,11 +51,12 @@ Total ≈ 31–32 topics — same order of magnitude as Y5's 32.
 
 ## PREREQS (cross-strand edges)
 
-Live now (6A): `u05-frac-amount ← u02-divide` (fraction of an amount = divide,
-then multiply).
+Live now: `u05-frac-amount ← u02-divide` (fraction of an amount = divide,
+then multiply) · `u07-dec-place ← u01-pv10m` (the columns carry on past the
+decimal point; B9).
 
 Reserved for later books (add when the target topic lands):
-`u07-dec-place ← u01-pv10m` · `u08-pct-equiv ← u04-simplify` ·
+`u08-pct-equiv ← u04-simplify` ·
 `u12-ratio ← u05-frac-amount` · `u15-averages ← u02-divide`.
 
 Inside a strand the book order holds automatically (scheduler invariant).
@@ -58,8 +64,8 @@ Inside a strand the book order holds automatically (scheduler invariant).
 ## Lesson register (B8, 2026-11-10)
 
 `app/js/maths/content/lessons.js` lists all 140 lessons in book order, titles
-verbatim from `y6-yearly-overview.md`. Each 6A lesson carries the topic id of
-the range above (e.g. `u04-addsub-frac` = U4 L6–11); 6B/6C lessons carry
-`null` until their topics exist. A test pins that walking the lessons in order
+verbatim from `y6-yearly-overview.md`. Each lesson of 6A and Unit 7 carries the
+topic id of the range above (e.g. `u04-addsub-frac` = U4 L6–11); lessons from
+Unit 8 on carry `null` until their topics exist. A test pins that walking the lessons in order
 visits the topics in `topicOrder`. When a 6B/6C topic lands, add its ranges to
 the unit's row in `UNIT_TABLE`.

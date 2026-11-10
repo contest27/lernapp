@@ -45,11 +45,13 @@ question, so the task type can be recognised even when the title is forgotten).
 The day's ten minutes then prepare the NEXT lesson: a short intro, four
 questions of its type and two review questions. The parent corner shows every
 check-in and whether the pages were finished. Lesson-precise warm-ups exist for
-units 4–6; other 6A lessons use their topic; book 6B/6C lessons are tracked but
-have no content yet. The English module is hidden (switch in the parent corner).
+units 4–7; the earlier lessons use their topic; lessons after the last unit
+with content are tracked, and their day is a review round. The English module is
+hidden (switch in the parent corner).
 
-Book 6A is practisable throughout: its topics, guided lessons with tap-a-word
-German glosses, spaced review (Year 5 topics included), treasure map and parent
-corner. Books 6B/6C are the open work; see
+Everything up to and including Unit 7 (Decimals, the first unit of book 6B) is
+practisable: its topics, guided lessons with tap-a-word German glosses, spaced
+review (Year 5 topics included), treasure map and parent corner. The rest of
+6B and book 6C are the open work; see
 `quality_reports/reference/y6-topic-spine.md` for the curriculum spine and
 `CLAUDE.md` for the phase plan.

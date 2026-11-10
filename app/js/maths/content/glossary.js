@@ -103,6 +103,10 @@ export const GLOSSARY = {
   calculation: 'die Rechnung',
   operation: 'die Rechenart (+ − × ÷)',
   fact: 'die Rechenaufgabe, die Tatsache',
+  // Y6 Unit 7 warm-ups (B9)
+  partition: 'zerlegen (z. B. 1.4 in 1 und 0.4)',
+  counter: 'das Plättchen (Zählplättchen)',
+  holder: 'place holder: der Platzhalter (eine 0)',
 
   // ---- fractions, decimals, percentages
   fraction: 'der Bruch',

@@ -5,7 +5,7 @@
 // quality_reports/reference/y6-yearly-overview.md.
 
 import { num, tf, mc, mcFrom, scenario, ri, pick, shuffle } from './gen.js';
-import { coordGrid, rectGrid } from './vis.js';
+import { coordGrid, coordGrid4, rectGrid } from './vis.js';
 
 const NAMES = ['Ava', 'Ben', 'Chloe', 'Dev', 'Emma', 'Finn', 'Grace', 'Hugo', 'Isla', 'Jack'];
 
@@ -347,6 +347,7 @@ export const topics6aU6 = [
         {
           text: 'Coordinates can also use <b>negative numbers</b>. The x-axis and y-axis together make FOUR quadrants. A point like (−2, 3) is 2 to the LEFT of the y-axis and 3 ABOVE the x-axis. Where the axes cross, (0, 0), is called the <b>origin</b>.',
           alt: 'Negative coordinates go left (for x) or down (for y) instead of right or up. The two axes cross at the origin, (0, 0), dividing the grid into four quadrants.',
+          svg: coordGrid4(5, [[-2, 3, 'P']]),
         },
         {
           text: 'A <b>translation</b> slides a point across the grid without turning or flipping it. Moving right adds to the x-coordinate, moving left subtracts. Moving up adds to the y-coordinate, moving down subtracts. Translate (2, 1) by "3 right and 2 up" and you land on (5, 3).',
@@ -355,6 +356,7 @@ export const topics6aU6 = [
         {
           text: 'A <b>reflection</b> flips a point over a mirror line. Reflecting in the x-axis flips the SIGN of the y-coordinate: (4, 3) becomes (4, −3). Reflecting in the y-axis flips the sign of the x-coordinate: (4, 3) becomes (−4, 3).',
           alt: 'Reflecting is like a mirror. Flipping in the x-axis changes only the up/down number\'s sign; flipping in the y-axis changes only the left/right number\'s sign — the other number always stays the same.',
+          svg: coordGrid4(5, [[4, 3, 'A'], [4, -3, 'B'], [-4, 3, 'C']]),
         },
       ],
     },

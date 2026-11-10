@@ -20,7 +20,17 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
+class Server(http.server.ThreadingHTTPServer):
+    # socketserver's default listen backlog is 5. The test page imports some
+    # sixty modules at once over several connections; when the backlog is full
+    # Windows refuses the connection and the page reports "Failed to fetch
+    # dynamically imported module". The gate failed 2 runs in 8 at 7f67cf5 and
+    # 5 in 10 once Unit 7 added two modules (2026-11-10).
+    request_queue_size = 128
+    daemon_threads = True
+
+
 if __name__ == "__main__":
-    with http.server.ThreadingHTTPServer(("127.0.0.1", PORT), NoCacheHandler) as srv:
+    with Server(("127.0.0.1", PORT), NoCacheHandler) as srv:
         print(f"serving {ROOT} on http://127.0.0.1:{PORT}")
         srv.serve_forever()

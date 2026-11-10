@@ -407,8 +407,12 @@ function inputControl(q, submit) {
 // The correct answer as the feedback line shows it. An MC option is shown as
 // the option itself: answerText (engine/check.js, a verbatim sync) strips HTML
 // for plain text, which turned a stacked mixed number 2 3/4 into "2 34" here.
-function answerHtml(q) {
-  return q.kind === 'mc' ? String(q.options[q.answerIndex]) : answerText(q);
+// The engine's answerText (verbatim from Y5) would print a money answer as
+// "2.7 pounds"; Unit 7 (B9) is the unit that teaches it is written £2.70.
+export function answerHtml(q) {
+  if (q.kind === 'mc') return String(q.options[q.answerIndex]);
+  if (q.kind === 'num' && q.unit === 'pounds') return '£' + q.answer.toFixed(2);
+  return answerText(q);
 }
 
 function recordResult(s, item, firstTryOk) {
