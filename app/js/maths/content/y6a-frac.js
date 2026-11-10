@@ -17,16 +17,18 @@ import { fracBar, fracCircle, numberLine, barModel } from './vis.js';
 
 const NAMES = ['Ava', 'Ben', 'Chloe', 'Dev', 'Emma', 'Finn', 'Grace', 'Hugo', 'Isla', 'Jack'];
 
-function gcd(a, b) {
+// Exported for the lesson-precise warm-ups (y6a-lessons-*.js), which reuse
+// them rather than keeping a second copy.
+export function gcd(a, b) {
   a = Math.abs(a); b = Math.abs(b);
   while (b) [a, b] = [b, a % b];
   return a || 1;
 }
-function simplify(n, d) {
+export function simplify(n, d) {
   const g = gcd(n, d);
   return [n / g, d / g];
 }
-function mixed(w, n, d) {
+export function mixed(w, n, d) {
   return `${w} ${fr(n, d)}`;
 }
 function twoNames(rng) {

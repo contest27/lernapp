@@ -76,6 +76,35 @@ Project-scope memory. Cross-project lessons go to `~/.claude/MEMORY.md`.
     Y5 tier 3s are procedural templates with no deck, where two identical
     shells in a row are a coin flip; the test stays Y6-only on purpose.
 
+- **2026-11-10 — B8: Year 6 follows the class, lesson by lesson.** The class
+  does about three practice-book pages a day (roughly one Power Maths lesson),
+  the books stay at school, and Severin does not always finish. So the app asks
+  at a check-in which lesson the class did, and the day's round prepares the
+  NEXT one: intro, 4 questions of its type [1,1,2,2], 2 review; 2 questions of
+  the last lesson first when he reported it unfinished (Sebastian's choices).
+  `content/lessons.js` is the 140-lesson register (titles verbatim from the
+  overview, `topicId` from the spine ranges; 6B/6C `null` until content);
+  `maths/school.js` holds the logic; previews are lesson-precise for U4–U6
+  (`y6a-lessons-*.js`), topic-level fallback elsewhere. A topic joins the review
+  pool when the class passes its LAST lesson (`markTaught`, no stars). For Y6
+  the tracker replaces the 6-day cadence, the English/maths alternation and the
+  "not had this in class yet" button (all still there for other curricula).
+  One log entry per day: a same-day check-in is a correction and restores the
+  position stored in the entry it replaces (`before`).
+  English is dormant: `shell.englishOn = false` hides the hub, the Home tab and
+  the English parent section; `homeName()` (shell/core.js) picks the launch screen.
+  - **[LEARN:state] `hydrate()` never filled new SHELL keys on an existing
+    install.** `Object.assign(base, s)` replaced `base.shell` with the stored
+    shell before the shell merge ran, so the "defaults" it merged into were the
+    stored object itself. Harmless until the first shell key added after
+    release (`englishOn`); caught by the hydrate test. Shell defaults are their
+    own object now.
+  - **[LEARN:tooling] Headless Edge can stop dumping without failing** — exit 0,
+    empty DOM, no stderr, for any page (2026-11-10). `run_tests.py` now tries
+    every Edge/Chrome in turn when a dump comes back empty; Chrome works here.
+  - **[LEARN:ui] `go()` scrolls to the top**, so a list that re-renders on tap
+    loses the row he just tapped. The check-in's lesson rows open in place.
+
 ## Learnings
 
 - (Inherited, still binding here: `Object.assign` on nested state drops new

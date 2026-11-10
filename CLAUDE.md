@@ -6,7 +6,9 @@ iPad-first PWA, GitHub Pages. One shell, two modules:
 
 - **Maths** — curriculum-driven (Power Maths Year 6 now; Year 5 as a refresher
   pool via one-time backup import). Engine copied verbatim from the Y5 trainer.
-- **English** — the Wordforge app, ported under the shell (phase B5).
+- **English** — the Wordforge app, ported under the shell (phase B5). Dormant
+  since 2026-11-10: code and state stay, the app does not show it
+  (`shell.englishOn`, parent-corner switch).
 
 ## Stack decision (do not silently change)
 
@@ -21,7 +23,7 @@ without an explicit decision logged in MEMORY.md.
 |---|---|
 | Serve locally | `python3 tools/serve.py 8125` (no-cache; SW skipped on localhost) |
 | Tests | open `http://localhost:8125/tests/tests.html` — must show 0 failed |
-| Gate | `python tools/run_tests.py` — headless Edge runs the same test page; free, offline; exit 0 only at 0 failed |
+| Gate | `python tools/run_tests.py` — headless Edge (falls back to Chrome when Edge dumps nothing, as since 2026-11-10) runs the same test page; free, offline; exit 0 only at 0 failed |
 | Icons | `python3 tools/make_icons.py` |
 | Deploy | push to `main`; Cloudflare Pages serves `app/` + `functions/api/` → <https://lernapp-e3h.pages.dev> (GitHub Pages workflow removed 2026-08-19; the old build at contest27.github.io/lernapp is frozen) |
 
@@ -74,6 +76,8 @@ B0 scaffold ✓ → B1 Y6 spine ✓ → B2 content 6A ✓ (6B/6C open) → B3 di
 → practice UI ✓ → map ✓ → parent corner ✓ → B5 Wordforge ✓ → B6 deploy ✓
 (Cloudflare Pages 2026-08-19) →
 B7 Y5 priors + server-key gates + Gemini speech ✓ (2026-08-25) →
-B4 Y5 topics as review material ✓ (2026-09-07; review-only days spread over 5 topics) —
-open: 6B/6C.
+B4 Y5 topics as review material ✓ (2026-09-07; review-only days spread over 5 topics) →
+B8 class tracker + tomorrow's-lesson warm-up ✓ (2026-11-10; lesson register
+`content/lessons.js`, lesson-precise previews U4–U6, `maths/school.js`, English hidden) —
+open: 6B/6C (the class reaches Unit 7 around early January).
 Plan of record: `~/.claude/plans/inherited-crafting-lantern.md`.

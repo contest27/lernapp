@@ -34,6 +34,8 @@ async function run() {
       check: await import('../js/engine/check.js'),
       progress: await import('../js/engine/progress.js'),
       content: await import('../js/maths/content/index.js'),
+      lessons: await import('../js/maths/content/lessons.js'),
+      school: await import('../js/maths/school.js'),
       gen: await import('../js/maths/content/gen.js'),
       glossary: await import('../js/maths/content/glossary.js'),
       shellStorage: await import('../js/shell/storage.js'),
@@ -332,6 +334,241 @@ async function run() {
         prev = shell;
       }
     }
+  });
+
+  // ==================== C2. LESSON REGISTER + TOMORROW'S WARM-UPS (B8) ====================
+
+  const L = mods.lessons;
+
+  test('lessons: 140 lessons, per-unit counts as in the Pearson overview, unique ids', () => {
+    eq(L.LESSONS.length, 140, 'the overview lists 140 lessons');
+    const perUnit = L.UNITS.map((u) => L.lessonsOfUnit(u.unit).length);
+    eq(perUnit, [7, 10, 9, 11, 9, 4, 9, 9, 11, 5, 11, 9, 12, 14, 10], 'lessons per unit');
+    eq(new Set(L.LESSONS.map((l) => l.id)).size, 140, 'ids are unique');
+    eq(L.LESSONS.filter((l) => l.book === '6A').length, 50);
+    eq(L.LESSONS.filter((l) => l.book === '6B').length, 54);
+    eq(L.LESSONS.filter((l) => l.book === '6C').length, 36);
+    eq(L.lessonById('u04-l07').title, 'Adding and subtracting fractions (2)');
+    eq(L.lessonLabel('u04-l07'), 'U4 · L7');
+  });
+
+  test('lessons: every 6A lesson maps to a Y6 topic, in topic order; 6B/6C wait for content', () => {
+    for (const l of L.LESSONS.filter((x) => x.book === '6A')) {
+      ok(l.topicId && isY6Topic(l.topicId), `${l.id}: no Y6 topic`);
+    }
+    // Walking the lessons in book order visits each topic in one run, in topicOrder.
+    const runs = [];
+    for (const l of L.LESSONS) if (l.topicId && runs[runs.length - 1] !== l.topicId) runs.push(l.topicId);
+    eq(runs, topicOrder, 'lesson ranges follow the topic spine');
+    eq(L.LESSONS.filter((l) => l.book !== '6A' && l.topicId).length, 0, 'no 6B/6C topic exists yet');
+    eq(L.previewOf('u07-l01'), null, 'no preview without content');
+  });
+
+  test('lessons: navigation — next, first, last, and topics taught by a lesson', () => {
+    eq(L.nextLesson(null).id, 'u01-l01');
+    eq(L.nextLesson('u04-l11').id, 'u05-l01', 'a unit hands over to the next one');
+    eq(L.nextLesson('u15-l10'), null);
+    eq(L.nextLesson('nope'), null);
+    eq(L.topicsTaughtBy('u04-l05'),
+      ['u01-pv10m', 'u01-round-neg', 'u02-addsub', 'u02-multiply', 'u02-divide',
+        'u03-factors', 'u03-order-ops', 'u04-simplify', 'u04-compare']);
+    eq(L.topicsTaughtBy('u04-l04').includes('u04-compare'), false, 'a topic is taught only at its LAST lesson');
+  });
+
+  test('lessons: units 4-6 have lesson-precise warm-ups; the rest fall back to the topic', () => {
+    for (const l of L.LESSONS.filter((x) => x.unit >= 4 && x.unit <= 6)) {
+      const p = L.previewOf(l.id);
+      ok(p && p.own, `${l.id}: no lesson-precise preview`);
+      ok(p.segments.length === 1 && typeof p.segments[0].text === 'string' && p.segments[0].text.length > 20,
+        `${l.id}: intro missing`);
+      ok(typeof p.segments[0].alt === 'string' && p.segments[0].alt.length > 20, `${l.id}: no "say it differently"`);
+      ok(p.example && Array.isArray(p.example.steps) && p.example.steps.length >= 2, `${l.id}: no worked example`);
+    }
+    const fb = L.previewOf('u02-l06');
+    ok(fb && !fb.own && fb.segments.length >= 1, 'a U2 lesson falls back to its topic');
+    eq(Object.keys(L.LESSON_PREVIEWS).filter((id) => !L.lessonById(id)), [], 'every preview key is a real lesson');
+  });
+
+  test('lessons: every warm-up sweeps clean (tiers 1-2 x 40 seeds) and is deterministic', () => {
+    for (const l of L.LESSONS) {
+      const p = L.previewOf(l.id);
+      if (!p) continue;
+      for (let tier = 1; tier <= 2; tier++) {
+        for (let seed = 0; seed < 40; seed++) {
+          const where = `${l.id} t${tier} s${seed}`;
+          const q = p.gen(makeRng(seedFromString(`${l.id}|${tier}|${seed}`)), tier);
+          ok(q && typeof q === 'object', where + ': no question');
+          ok(['num', 'mc', 'tf', 'frac', 'order'].includes(q.kind), where + ': bad kind ' + q.kind);
+          ok(typeof q.prompt === 'string' && q.prompt.length > 4, where + ': empty prompt');
+          // Lesson-precise warm-ups pin the tier on every kind; the topic
+          // fallbacks inherit the topic sweep's rule (num/mc only).
+          if (p.own || q.kind === 'num' || q.kind === 'mc') eq(q.tier, tier, where + ': tier mismatch');
+          ok(checkAnswer(q, correctInput(q)).ok, where + ': checker rejects its own correct answer');
+          if (q.kind === 'mc') {
+            const opts = q.options.map(String);
+            eq(new Set(opts).size, opts.length, where + ': duplicate options');
+            ok(opts.length >= 2, where + ': fewer than two options');
+          }
+          if (q.kind === 'num') ok(Number.isFinite(q.answer), where + ': answer is not a number');
+          if (q.kind === 'frac') ok(q.answer.d > 0 && Number.isInteger(q.answer.n) && Number.isInteger(q.answer.d), where + ': bad fraction');
+        }
+        const seed = seedFromString(`${l.id}|${tier}|determinism`);
+        eq(p.gen(makeRng(seed), tier).prompt, p.gen(makeRng(seed), tier).prompt, `${l.id} t${tier}: not deterministic`);
+      }
+    }
+  });
+
+  // ==================== C3. CLASS TRACKER (maths/school.js, B8) ====================
+
+  const S = mods.school;
+  // isResumable compares against the real calendar day, so session tests use it.
+  const dayKeyToday = () => mods.engineStorage.dayKey();
+  // A Y6 slice as on the device: warm-up done, priors present for every topic.
+  function trackerSlice() {
+    const st = shellStorage.defaultState();
+    const slice = st.maths.y6;
+    slice.diagnosticDone = true;
+    for (const t of topics) slice.mastery[t.id] = newMastery(60);
+    return slice;
+  }
+
+  test('tracker: calendar — weekdays, weekends, the last school day', () => {
+    eq(S.weekday('2026-11-10'), 2, 'a Tuesday');
+    eq(S.isSchoolDay('2026-11-13'), true, 'Friday');
+    eq(S.isSchoolDay('2026-11-14'), false, 'Saturday');
+    eq(S.lastSchoolDay('2026-11-15'), '2026-11-13', 'Sunday looks back to Friday');
+    eq(S.lastSchoolDay('2026-11-16'), '2026-11-16', 'Monday is its own');
+  });
+
+  test('tracker: a check-in is owed once per school day, and a weekend asks only about a missed Friday', () => {
+    const slice = trackerSlice();
+    eq(S.checkinDue(slice, '2026-11-10'), true, 'never checked in');
+    slice.school.lastCheckin = '2026-11-10';
+    eq(S.checkinDue(slice, '2026-11-10'), false, 'done today');
+    eq(S.checkinDue(slice, '2026-11-11'), true, 'a new school day');
+    slice.school.lastCheckin = '2026-11-13';
+    eq(S.checkinDue(slice, '2026-11-14'), false, 'Saturday after a Friday check-in');
+    eq(S.checkinDue(slice, '2026-11-15'), false, 'Sunday too');
+    slice.school.lastCheckin = '2026-11-12';
+    eq(S.checkinDue(slice, '2026-11-14'), true, 'Friday was missed');
+  });
+
+  test('tracker: check-ins move the position, teach finished topics, and a same-day correction undoes the first', () => {
+    const slice = trackerSlice();
+    eq(S.predictedLesson(slice), null, 'no prediction before the first check-in');
+    const r = S.applyCheckin(slice, '2026-11-10', { lesson: 'u04-l05', finished: true });
+    eq(r.pos, 'u04-l05');
+    eq(S.predictedLesson(slice).id, 'u04-l06');
+    ok(r.taught.includes('u04-compare') && r.taught.includes('u01-pv10m'), 'every topic up to U4 L5 is taught');
+    ok(!slice.completed.includes('u04-addsub-frac'), 'the topic in progress is not');
+    ok(slice.mastery['u04-compare'].due > '2026-11-10', 'a taught topic is scheduled for review');
+    eq(Object.keys(slice.stars).length, 0, 'teaching earns no stars');
+
+    // Same day again = a correction: one log entry, the position from before it is the base.
+    S.applyCheckin(slice, '2026-11-10', { lesson: 'u04-l06', finished: false });
+    eq(slice.school.log.length, 1, 'one entry per day');
+    eq(slice.school.pos, 'u04-l06');
+    S.applyCheckin(slice, '2026-11-10', { lesson: null });
+    eq(slice.school.pos, null, 'correcting to "no new lesson" restores the position from before the day');
+    S.applyCheckin(slice, '2026-11-10', { lesson: 'u04-l06', finished: false });
+
+    S.applyCheckin(slice, '2026-11-11', { lesson: null });
+    eq(slice.school.pos, 'u04-l06', '"no new lesson" keeps the position');
+    eq(slice.school.log.at(-1), { day: '2026-11-11', lesson: null, finished: null, before: 'u04-l06' });
+
+    S.applyCheckin(slice, '2026-11-12', { lesson: 'u05-l02', finished: true });
+    ok(slice.completed.includes('u04-addsub-frac'), 'a jump ahead teaches what it passed');
+    S.applyCheckin(slice, '2026-11-13', { lesson: 'u05-l01', finished: true });
+    eq(slice.school.pos, 'u05-l01', 'stepping back is allowed');
+    ok(slice.completed.includes('u04-addsub-frac'), 'and does not un-teach');
+
+    let threw = false;
+    try { S.applyCheckin(slice, '2026-11-16', { lesson: 'u99-l01' }); } catch { threw = true; }
+    ok(threw, 'an unknown lesson is refused');
+  });
+
+  test('tracker: the round is 4 of tomorrow + 2 review, with 2 of today first when unfinished', () => {
+    const slice = trackerSlice();
+    S.applyCheckin(slice, '2026-11-10', { lesson: 'u04-l06', finished: true });
+    let p = S.planPreview(slice, '2026-11-10', makeRng(1));
+    eq(p.target, 'u04-l07');
+    eq(p.hasPreview, true);
+    eq(p.catchUp, null);
+    eq(p.introAt, 0);
+    eq(p.items.map((i) => i.part), ['preview', 'preview', 'preview', 'preview', 'review', 'review']);
+    eq(p.items.filter((i) => i.part === 'preview').map((i) => i.tier), S.PREVIEW_TIERS);
+    const rev = p.items.filter((i) => i.part === 'review').map((i) => i.topicId);
+    eq(new Set(rev).size, 2, 'two different review topics');
+    ok(!rev.includes('u04-addsub-frac'), 'review never repeats the topic being previewed');
+
+    S.applyCheckin(slice, '2026-11-10', { lesson: 'u04-l06', finished: false });
+    p = S.planPreview(slice, '2026-11-10', makeRng(1));
+    eq(p.catchUp, 'u04-l06');
+    eq(p.introAt, 2, 'the intro comes after the catch-up');
+    eq(p.items.length, 8);
+    eq(p.items.slice(0, 2).map((i) => [i.part, i.lessonId, i.tier]), [['catchup', 'u04-l06', 1], ['catchup', 'u04-l06', 2]]);
+
+    S.applyCheckin(slice, '2026-11-11', { lesson: null });
+    eq(S.planPreview(slice, '2026-11-11', makeRng(1)).catchUp, null, 'the catch-up belongs to the check-in that reported it');
+  });
+
+  test('tracker: a next lesson without content is a review round; the end of the book has no target', () => {
+    const slice = trackerSlice();
+    S.applyCheckin(slice, '2026-11-10', { lesson: 'u06-l04', finished: false });
+    const p = S.planPreview(slice, '2026-11-10', makeRng(2));
+    eq(p.target, 'u07-l01');
+    eq(p.hasPreview, false);
+    eq(p.introAt, null);
+    eq(p.items.filter((i) => i.part === 'catchup').length, 2, 'today\'s unfinished pages still come first');
+    eq(p.items.filter((i) => i.part === 'review').length, S.REVIEW_DAY_ITEMS);
+    S.applyCheckin(slice, '2026-11-11', { lesson: 'u15-l10', finished: true });
+    eq(S.predictedLesson(slice), null);
+    ok(S.planPreview(slice, '2026-11-11', makeRng(2)).items.length > 0, 'still a review round after the last lesson');
+  });
+
+  test('tracker: the built round is a resumable session; finishing it books a preview day with the lesson', () => {
+    const slice = trackerSlice();
+    S.applyCheckin(slice, dayKeyToday(), { lesson: 'u04-l06', finished: false });
+    const s = S.buildPreviewSession(slice, dayKeyToday(), makeRng(5));
+    eq(s.kind, 'preview');
+    eq(s.build, mods.build.BUILD);
+    eq(s.phase, 'items', 'a round with a catch-up starts with the items');
+    eq(s.introAt, 2);
+    eq(s.lessonId, 'u04-l07');
+    ok(mods.session.isResumable(s), 'the daily slot can resume it');
+    for (const it of s.items) ok(checkAnswer(it.q, correctInput(it.q)).ok, 'a built question rejects its own answer');
+    eq(s.items.map((i) => i.tag), ['catchup', 'catchup', 'preview', 'preview', 'preview', 'preview', 'review', 'review']);
+    eq(s.items.map((i) => i.part), ['practice', 'practice', 'practice', 'practice', 'practice', 'practice', 'review', 'review']);
+
+    s.results = s.items.map((i) => ({ part: i.part, topicId: i.topicId, ok: true }));
+    const starsBefore = JSON.stringify(slice.stars);
+    mods.focus.applySessionEnd(slice, s, dayKeyToday());
+    const e = slice.history.at(-1);
+    eq([e.kind, e.lesson, e.total, e.correct], ['preview', 'u04-l07', 8, 8]);
+    eq(JSON.stringify(slice.stars), starsBefore, 'a warm-up completes no topic');
+    eq(slice.streak.lastDay, dayKeyToday(), 'it counts as the day\'s learning');
+    eq(s.summary.practice.total, 6);
+
+    const view = S.previewTopicView('u04-l07');
+    eq(view.title, 'Adding and subtracting fractions (2)');
+    eq(mods.lesson.lessonSteps(view).at(-1).kind, 'checkin', 'the lesson screen walks it like a topic');
+    S.applyCheckin(slice, dayKeyToday(), { lesson: 'u04-l06', finished: true });
+    eq(S.buildPreviewSession(slice, dayKeyToday(), makeRng(5)).phase, 'explain', 'without a catch-up the intro opens the round');
+  });
+
+  test('tracker: hydrate gives an old state the tracker and hides English', () => {
+    const old = shellStorage.defaultState();
+    delete old.shell.englishOn;
+    delete old.maths.y6.school;
+    const h1 = shellStorage.hydrate(JSON.parse(JSON.stringify(old)));
+    eq(h1.shell.englishOn, false, 'English is hidden on an existing install');
+    eq(h1.maths.y6.school, { pos: null, lastCheckin: null, log: [] });
+    const kept = shellStorage.defaultState();
+    kept.maths.y6.school = { pos: 'u04-l03', log: [{ day: '2026-11-09', lesson: 'u04-l03', finished: true, before: null }] };
+    const h2 = shellStorage.hydrate(JSON.parse(JSON.stringify(kept)));
+    eq(h2.maths.y6.school.pos, 'u04-l03', 'a stored position survives');
+    eq(h2.maths.y6.school.lastCheckin, null, 'a missing key is filled one level deep');
+    eq(h2.maths.y6.school.log.length, 1);
   });
 
   // ==================== D. HUB STORAGE (fresh — pins the shell's design) ====================

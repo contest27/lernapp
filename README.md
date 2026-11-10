@@ -39,9 +39,17 @@ progress — export a backup before switching.
 
 ## Status
 
-Book 6A is complete and practisable: 13 topics, diagnostic, guided lessons
-with tap-a-word German glosses, practice ramp, spaced review, treasure map,
-parent corner. The English module (Wordforge) is ported; books 6B/6C, the Y5
-topic modules and the Gemini speech module are the work in progress;
-see `quality_reports/reference/y6-topic-spine.md` for the curriculum spine and
+**Since 2026-11-10 Year 6 follows the class.** At a check-in the child says
+which Power Maths lesson the class did (the likely one is shown with a sample
+question, so the task type can be recognised even when the title is forgotten).
+The day's ten minutes then prepare the NEXT lesson: a short intro, four
+questions of its type and two review questions. The parent corner shows every
+check-in and whether the pages were finished. Lesson-precise warm-ups exist for
+units 4–6; other 6A lessons use their topic; book 6B/6C lessons are tracked but
+have no content yet. The English module is hidden (switch in the parent corner).
+
+Book 6A is practisable throughout: its topics, guided lessons with tap-a-word
+German glosses, spaced review (Year 5 topics included), treasure map and parent
+corner. Books 6B/6C are the open work; see
+`quality_reports/reference/y6-topic-spine.md` for the curriculum spine and
 `CLAUDE.md` for the phase plan.

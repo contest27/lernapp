@@ -54,3 +54,12 @@ Reserved for later books (add when the target topic lands):
 `u12-ratio ← u05-frac-amount` · `u15-averages ← u02-divide`.
 
 Inside a strand the book order holds automatically (scheduler invariant).
+
+## Lesson register (B8, 2026-11-10)
+
+`app/js/maths/content/lessons.js` lists all 140 lessons in book order, titles
+verbatim from `y6-yearly-overview.md`. Each 6A lesson carries the topic id of
+the range above (e.g. `u04-addsub-frac` = U4 L6–11); 6B/6C lessons carry
+`null` until their topics exist. A test pins that walking the lessons in order
+visits the topics in `topicOrder`. When a 6B/6C topic lands, add its ranges to
+the unit's row in `UNIT_TABLE`.

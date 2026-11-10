@@ -23,6 +23,7 @@ const QA_CAP = 200;
 const HISTORY_CAP = 400;
 const GLOSS_CAP = 500;
 const CHAT_CAP = 100;
+const SCHOOL_LOG_CAP = 400;
 
 // English (Wordforge) ring-buffer caps — same pattern as the maths caps below,
 // sized to Wordforge's own original limits.
@@ -50,10 +51,20 @@ export function curriculumState() {
     chats: [],         // buddy conversations { day, view, topicId, assisted, messages }
     glossCache: {},    // normalised English word -> German gloss from the tutor
     deferred: {},      // topicId -> day it was pushed back ("not taught yet")
+    // The class tracker (maths/school.js, phase B8): the last Power Maths lesson
+    // the class did, as the child reported it, and the check-in log.
+    school: schoolState(),
     activeSession: null,
     focusSession: null,
     streak: null,      // ALIAS of shell.streak, restored by hydrate — never its own object
   };
+}
+
+// The class tracker. `pos` is a lesson id from content/lessons.js ('u04-l07')
+// or null before the first check-in; `log` holds one entry per check-in:
+// { day, lesson (id or null for "no new lesson"), finished (true/false/null) }.
+export function schoolState() {
+  return { pos: null, lastCheckin: null, log: [] };
 }
 
 // The English module's state — Wordforge's own defaultState() minus the
@@ -88,6 +99,9 @@ export function defaultState() {
       rate: 0.95,
       streak: { count: 0, lastDay: null },
       lastExport: null,
+      // English (Wordforge) is a dormant branch since 2026-11-10: its code and
+      // state stay, the app just does not show it. Parent-corner switch.
+      englishOn: false,
     },
     maths: {
       active: 'y6',
@@ -119,14 +133,14 @@ export function activeCurriculum(state) {
 //    identical (same object all runtime), and the shell's copy is the one that
 //    wins here.
 export function hydrate(s) {
-  const base = {
-    version: 1,
-    shell: { name: '', apiKey: '', voiceURI: null, rate: 0.95, streak: { count: 0, lastDay: null }, lastExport: null },
-    maths: { active: 'y6' },
-    english: null,
-  };
+  // The shell defaults are their own object. They used to sit inside `base`,
+  // and `Object.assign(base, s)` replaced base.shell with the STORED shell
+  // before it was merged — so a shell key added after first release was never
+  // filled in on an existing install (found 2026-11-10 with `englishOn`).
+  const shellBase = { name: '', apiKey: '', voiceURI: null, rate: 0.95, streak: { count: 0, lastDay: null }, lastExport: null, englishOn: false };
+  const base = { version: 1, maths: { active: 'y6' }, english: null };
   const merged = Object.assign(base, s);
-  merged.shell = Object.assign(base.shell, s.shell ?? {});
+  merged.shell = Object.assign(shellBase, s.shell ?? {});
   merged.shell.streak = Object.assign({ count: 0, lastDay: null }, merged.shell.streak ?? {});
   if (!merged.maths || typeof merged.maths !== 'object') merged.maths = { active: 'y6' };
   if (!merged.maths.active) merged.maths.active = 'y6';
@@ -135,6 +149,10 @@ export function hydrate(s) {
   for (const name of names) {
     const cur = Object.assign(curriculumState(), merged.maths[name]);
     cur.settings = Object.assign({ targetDate: null, newTopicEveryDays: 6 }, merged.maths[name]?.settings ?? {});
+    // One level deep like settings: a slice saved before B8 has no `school` and
+    // gains it here; a stored one keeps its values and gains any later key.
+    cur.school = Object.assign(schoolState(), merged.maths[name]?.school ?? {});
+    if (!Array.isArray(cur.school.log)) cur.school.log = [];
     cur.streak = merged.shell.streak; // the alias — one streak for the whole app
     merged.maths[name] = cur;
   }
@@ -171,6 +189,7 @@ export function capState(state) {
     if (c.qaLog.length > QA_CAP) c.qaLog = c.qaLog.slice(-QA_CAP);
     if (c.history.length > HISTORY_CAP) c.history = c.history.slice(-HISTORY_CAP);
     if (c.chats.length > CHAT_CAP) c.chats = c.chats.slice(-CHAT_CAP);
+    if (c.school?.log?.length > SCHOOL_LOG_CAP) c.school.log = c.school.log.slice(-SCHOOL_LOG_CAP);
     const words = Object.keys(c.glossCache ?? {});
     if (words.length > GLOSS_CAP) {
       for (const w of words.slice(0, words.length - GLOSS_CAP)) delete c.glossCache[w];

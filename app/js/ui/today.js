@@ -12,6 +12,7 @@ import { makeRng, seedFromString } from '../engine/rng.js';
 import { topicOrder, topicById, journeyMeta, completedY6 } from '../maths/content/index.js';
 import { startOrResume, startFocusSession } from './session.js';
 import { dayPlan, activeDeferrals, deferTopic, undeferTopic } from '../shell/rhythm.js';
+import { schoolTodayCard, schoolProgressCard } from './checkin.js';
 
 registerScreen('today', () => {
   const shell = store.state.shell;
@@ -34,10 +35,21 @@ registerScreen('today', () => {
   wrap.append(h('div', { class: 'home-top' },
     h('div', {},
       h('h1', { class: 'greet' }, `${greet}${shell.name ? ', ' + shell.name : ''}! 👋`),
-      h('p', { class: 'streakline' }, shell.streak.count > 0 ? `🔥 ${shell.streak.count}-day streak` : 'Ready for today?'),
-    ),
+      h('p', { class: 'streakline' }, shell.streak.count > 0 ? `🔥 ${shell.streak.count}-day streak` : 'Ready for today?'),    ),
     gear,
   ));
+
+  // Year 6 follows the class (phase B8, ui/checkin.js): check-in, then the round
+  // for tomorrow's lesson. The cadence / English-day / "not had this yet" flow
+  // below stays for any other curriculum, and for the warm-up check that seeds
+  // the priors on a device that has never practised.
+  if (store.state.maths.active === 'y6' && slice.diagnosticDone) {
+    wrap.append(schoolTodayCard(slice, today), schoolProgressCard(slice));
+    const nudge = backupNudge(slice, shell, today);
+    if (nudge) wrap.append(nudge);
+    wrap.append(bottomNav('today', go));
+    return wrap;
+  }
 
   const doneToday = shell.streak.lastDay === today;
   const resumable = slice.activeSession && slice.activeSession.day === today && slice.activeSession.phase !== 'summary';
@@ -150,14 +162,18 @@ registerScreen('today', () => {
         ? `🏁 To finish by ${targetLabel}: ${Math.ceil(pace.perDay)} topics a day (${pace.remaining} to go, ${pace.daysLeft} days).`
         : `🏁 On track for ${targetLabel}: one topic a day is enough (${pace.remaining} to go).`) : null));
 
-  // Backup nudge for the parent (shows only after real usage).
-  const needNudge = slice.history.length >= 4 &&
-    (!shell.lastExport || daysBetween(shell.lastExport.slice(0, 10), today) >= 7);
-  if (needNudge) {
-    wrap.append(h('div', { class: 'nudge' },
-      '💾 Parents: it has been a while since the last backup. Hold ⚙️ to open the Parent corner.'));
-  }
+  const nudge = backupNudge(slice, shell, today);
+  if (nudge) wrap.append(nudge);
 
   wrap.append(bottomNav('today', go));
   return wrap;
 });
+
+// Backup nudge for the parent (shows only after real usage).
+function backupNudge(slice, shell, today) {
+  const needNudge = slice.history.length >= 4 &&
+    (!shell.lastExport || daysBetween(shell.lastExport.slice(0, 10), today) >= 7);
+  return needNudge
+    ? h('div', { class: 'nudge' }, '💾 Parents: it has been a while since the last backup. Hold ⚙️ to open the Parent corner.')
+    : null;
+}

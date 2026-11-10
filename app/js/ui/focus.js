@@ -85,6 +85,8 @@ export function applySessionEnd(state, s, today) {
   const entry = {
     kind: s.kind, topicId: s.newTopic ?? s.focusTopic ?? null,
     total: all.length, correct: all.filter((r) => r.ok).length, minutes,
+    // A tomorrow's-lesson round (maths/school.js) names the lesson it prepared.
+    ...(s.lessonId ? { lesson: s.lessonId } : {}),
   };
 
   if (s.focus && s.kind === 'focus-review') {

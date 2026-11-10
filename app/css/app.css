@@ -424,6 +424,36 @@ h1, h2, h3 { margin: 0 0 8px; }
 .vcount { font-weight: 800; color: var(--brand-dark); font-size: 0.85rem; }
 .notyet { margin-top: 6px; font-size: 0.92rem; }
 
+/* ---- Power Maths check-in (ui/checkin.js, B8) ---- */
+.checkin-card h2 { margin: 8px 0 12px; }
+.ci-candidate { border: 2px solid var(--brand); border-radius: var(--radius); padding: 14px; margin: 10px 0 14px; background: #f8fcff; }
+.ci-sub { color: var(--muted); font-weight: 700; margin: 0 0 4px; font-size: 0.9rem; }
+.ci-lesson { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 2px 0 8px; }
+.ci-label { background: var(--brand); color: #fff; font-weight: 800; border-radius: 999px; padding: 3px 10px; font-size: 0.85rem; white-space: nowrap; }
+.ci-title { font-size: 1.2rem; font-weight: 800; }
+.ci-sample { background: var(--bg); border-radius: 14px; padding: 10px 12px; margin: 8px 0 12px; }
+.ci-sample-head { margin: 0 0 6px; color: var(--muted); font-size: 0.85rem; font-weight: 700; }
+.ci-sample .prompt { font-size: 1.05rem; }
+.ci-opts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ci-opt { background: #fff; border: 2px solid var(--line); border-radius: 10px; padding: 4px 10px; font-weight: 600; }
+.ci-nosample { margin: 6px 0 10px; }
+.ci-buttons { display: flex; flex-direction: column; gap: 10px; margin: 10px 0; }
+.ci-units { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 10px; }
+.ci-unitrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ci-book { font-weight: 800; color: var(--muted); width: 2.4em; }
+.chip.ci-unit { background: #f1f5f9; color: var(--brand-dark); padding: 8px 12px; }
+.chip.ci-unit.on { background: var(--brand); color: #fff; }
+.ci-unit-title { margin: 12px 0 6px; }
+.ci-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.ci-row { border: 2px solid var(--line); border-radius: 14px; padding: 4px; }
+.ci-row.open { border-color: var(--brand); padding: 4px 10px 10px; }
+.ci-rowbtn { display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left; padding: 10px 8px; min-height: 48px; background: none; }
+.ci-n { font-weight: 800; color: var(--brand-dark); min-width: 2.2em; }
+.ci-t { flex: 1; font-weight: 600; }
+.ci-mark { font-size: 0.75rem; font-weight: 800; color: var(--muted); background: #f1f5f9; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.ci-mark.next { color: #92400e; background: #fef3c7; }
+.ci-change { display: block; margin: 12px auto 0; background: none; color: var(--brand-dark); font-weight: 700; font-size: 0.92rem; text-decoration: underline; min-height: 44px; }
+
 /* ================================================================ English
    Wordforge's own look, SCOPED to `.en` instead of merged.
 

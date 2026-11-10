@@ -3,7 +3,7 @@
 
 // MUST match BUILD in app/js/shell/build.js — the app compares it against the
 // stamp on a stored session, and the test suite fails if the two drift apart.
-const CACHE_VERSION = 'lernapp-v16';
+const CACHE_VERSION = 'lernapp-v17';
 
 // English (Wordforge) chapter narration MP3s live in their own long-lived
 // cache that SURVIVES CACHE_VERSION bumps: they are addressed by chapter
@@ -30,6 +30,7 @@ const ASSETS = [
   './js/shell/rhythm.js',
   './js/shell/build.js',
   './js/maths/y5-bridge.js',
+  './js/maths/school.js',
   './js/ui/home.js',
   './js/ui/parent.js',
   './js/ui/today.js',
@@ -44,6 +45,7 @@ const ASSETS = [
   './js/ui/buddy.js',
   './js/ui/gloss.js',
   './js/ui/explain.js',
+  './js/ui/checkin.js',
   './js/qa/tutor.js',
   './js/qa/endpoint.js',
   './js/tts.js',
@@ -54,6 +56,9 @@ const ASSETS = [
   './js/maths/content/y6a.js',
   './js/maths/content/y6a-u3u6.js',
   './js/maths/content/y6a-frac.js',
+  './js/maths/content/lessons.js',
+  './js/maths/content/y6a-lessons-u4.js',
+  './js/maths/content/y6a-lessons-u5u6.js',
   './js/maths/content/y5.js',
   './js/maths/content/y5a.js',
   './js/maths/content/y5b.js',

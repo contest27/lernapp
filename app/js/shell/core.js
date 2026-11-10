@@ -21,6 +21,13 @@ export function en() {
   return store.state.english;
 }
 
+// The launch screen. The hub (ui/home.js) exists to choose between maths and
+// English; with English hidden (shell.englishOn, since 2026-11-10) there is
+// nothing to choose, so the app opens straight on the maths day screen.
+export function homeName() {
+  return store.state.shell.englishOn ? 'home' : 'today';
+}
+
 // One ring-buffered log per curriculum of everything the child asked for help
 // with (lesson Q&A, tapped-word glosses, reopened explanations), read by the
 // parent corner. Lives here because three screens write it and session.js

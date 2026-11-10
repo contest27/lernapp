@@ -1,4 +1,4 @@
-import { mount, go, store, cur, onAfterRender, rerender, currentScreen } from './shell/core.js';
+import { mount, go, store, cur, onAfterRender, rerender, currentScreen, homeName } from './shell/core.js';
 import { seedY6FromY5, seedReviewPoolFromY5 } from './maths/y5-bridge.js';
 import { probeServer } from './qa/endpoint.js';
 import { BUILD } from './shell/build.js';
@@ -8,6 +8,7 @@ import './ui/today.js';
 import './ui/map.js';
 import './ui/session.js';
 import './ui/parent.js';
+import './ui/checkin.js';
 import { mountBuddy, updateBuddy } from './ui/buddy.js';
 // English module (Wordforge port) — self-registering screens, same pattern
 // as the maths ui/*.js imports above.
@@ -55,7 +56,7 @@ probeServer().then(() => {
   // all, and it lands a moment after the first paint. Only the launch screen
   // is redrawn: a later screen is mid-interaction and must not be rebuilt
   // under him for a status line.
-  if (currentScreen() === 'home') rerender();
+  if (currentScreen() === homeName()) rerender();
   updateBuddy();
 });
 
@@ -63,7 +64,8 @@ probeServer().then(() => {
 mountBuddy();
 onAfterRender(updateBuddy);
 
-go('home');
+// The hub only while English is shown; otherwise straight to maths (shell/core.js).
+go(homeName());
 
 // Offline support once served over http(s). Skipped on localhost so local
 // development and the test runner always see fresh files.

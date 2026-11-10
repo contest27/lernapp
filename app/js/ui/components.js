@@ -15,7 +15,7 @@ export function bottomNav(active, go) {
     h('button', { class: 'nav-item' + (active === name ? ' active' : ''), onclick: () => go(name) },
       h('span', { class: 'nav-icon' }, icon), h('span', {}, label));
   return h('nav', { class: 'bottomnav' },
-    item('home', '🏫', 'Home'),
+    store.state.shell.englishOn ? item('home', '🏫', 'Home') : null, // no hub while English is hidden
     item('today', '🧮', 'Maths'),
     item('map', '🗺️', 'My map'),
   );

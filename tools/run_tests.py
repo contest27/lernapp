@@ -34,19 +34,27 @@ COUNTS = re.compile(r"TESTS: (\d+) passed, (\d+) failed \((\d+) total\)")
 LINE = re.compile(r'<div class="(pass|fail)">(.*?)</div>', re.S)
 
 
-def find_browser():
+def find_browsers():
+    """Every Edge/Chrome on the machine, Edge first.
+
+    More than one, because a browser can stop dumping without failing: on
+    2026-11-10 headless Edge exited 0 with an EMPTY DOM for any page (no stderr
+    either), while headless Chrome on the same page worked. An empty dump falls
+    through to the next browser instead of ending the run without a verdict."""
     pf86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
     pf = os.environ.get("ProgramFiles", r"C:\Program Files")
+    found = []
     for p in (rf"{pf86}\Microsoft\Edge\Application\msedge.exe",
               rf"{pf}\Microsoft\Edge\Application\msedge.exe",
               rf"{pf}\Google\Chrome\Application\chrome.exe",
               rf"{pf86}\Google\Chrome\Application\chrome.exe"):
         if os.path.isfile(p):
-            return p
+            found.append(p)
     for name in ("msedge", "microsoft-edge", "google-chrome", "chromium", "chrome"):
-        if shutil.which(name):
-            return shutil.which(name)
-    return None
+        w = shutil.which(name)
+        if w and w not in found:
+            found.append(w)
+    return found
 
 
 def free_port():
@@ -103,8 +111,8 @@ def main():
     # Test names carry non-ASCII; a redirected stdout on Windows is cp1252.
     sys.stdout.reconfigure(errors="replace")
 
-    browser = find_browser()
-    if not browser:
+    browsers = find_browsers()
+    if not browsers:
         return no_verdict("no Edge or Chrome found")
 
     work = Path(tempfile.mkdtemp(prefix="lernapp-tests-"))
@@ -119,28 +127,33 @@ def main():
         if not wait_until_served(srv, url, time.monotonic() + 15):
             return no_verdict(f"tools/serve.py did not serve {url}")
 
-        # Output goes to files, not pipes: a killed parent's children would hold a pipe open.
-        out_path, err_path = work / "dom.html", work / "stderr.log"
-        with open(out_path, "wb") as out, open(err_path, "wb") as err:
-            edge = subprocess.Popen(
-                [browser, "--headless=new", "--disable-gpu", "--no-first-run",
-                 "--no-default-browser-check", "--disable-extensions",
-                 f"--user-data-dir={work / 'profile'}",
-                 # Virtual time pauses while fetches are pending and skips idle
-                 # waits, so the async tests finish before the DOM is dumped.
-                 "--virtual-time-budget=60000", "--dump-dom", url],
-                stdin=subprocess.DEVNULL, stdout=out, stderr=err)
-            if not wait_for_dump(edge, out_path, time.monotonic() + a.timeout):
+        dom = log = ""
+        for i, browser in enumerate(browsers):
+            # Output goes to files, not pipes: a killed parent's children would hold a pipe open.
+            out_path, err_path = work / f"dom{i}.html", work / f"stderr{i}.log"
+            with open(out_path, "wb") as out, open(err_path, "wb") as err:
+                edge = subprocess.Popen(
+                    [browser, "--headless=new", "--disable-gpu", "--no-first-run",
+                     "--no-default-browser-check", "--disable-extensions",
+                     f"--user-data-dir={work / f'profile{i}'}",
+                     # Virtual time pauses while fetches are pending and skips idle
+                     # waits, so the async tests finish before the DOM is dumped.
+                     "--virtual-time-budget=60000", "--dump-dom", url],
+                    stdin=subprocess.DEVNULL, stdout=out, stderr=err)
+                if not wait_for_dump(edge, out_path, time.monotonic() + a.timeout):
+                    kill_tree(edge)
+                    edge.wait(timeout=30)
+                    return no_verdict(f"browser did not finish within {a.timeout:g} s (killed)")
+            if edge.poll() is None:
+                # The DOM is out, but Edge now and then hangs in its own shutdown
+                # afterwards (only its crashpad handler left); the run is over.
                 kill_tree(edge)
                 edge.wait(timeout=30)
-                return no_verdict(f"browser did not finish within {a.timeout:g} s (killed)")
-        if edge.poll() is None:
-            # The DOM is out, but Edge now and then hangs in its own shutdown
-            # afterwards (only its crashpad handler left); the run is over.
-            kill_tree(edge)
-            edge.wait(timeout=30)
-        dom = out_path.read_bytes().decode("utf-8", "replace")
-        log = err_path.read_bytes().decode("utf-8", "replace")
+            dom = out_path.read_bytes().decode("utf-8", "replace")
+            log = err_path.read_bytes().decode("utf-8", "replace")
+            if dom.strip():
+                break
+            print(f"run_tests: {Path(browser).stem} dumped nothing - trying the next browser")
 
         m = SUMMARY.search(dom)
         summary = html.unescape(m.group(1)).strip() if m else ""

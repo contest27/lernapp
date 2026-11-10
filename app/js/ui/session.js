@@ -20,6 +20,8 @@ import { segmentEl, exampleEl, explanationSheet } from './explain.js';
 import { attachGloss } from './gloss.js';
 import { dayPlan, activeDeferrals } from '../shell/rhythm.js';
 import { BUILD } from '../shell/build.js';
+import { buildPreviewSession, previewTopicView } from '../maths/school.js';
+import { lessonById, lessonLabel } from '../maths/content/lessons.js';
 import * as tts from '../tts.js';
 
 // ---------------------------------------------------------------- session build
@@ -92,6 +94,22 @@ export function startOrResume() {
   go('session');
 }
 
+// The class-tracker round (maths/school.js): tomorrow's lesson, plus today's
+// unfinished pages and a short review. It lives in the daily slot, so resuming
+// and the stale-build guard work exactly as for the old daily lesson.
+export function startOrResumePreview() {
+  const s = cur().activeSession;
+  if (isResumable(s) && s.kind === 'preview' && s.phase !== 'summary') {
+    go('session');
+    return;
+  }
+  const today = dayKey();
+  const rng = makeRng(seedFromString(today + '|preview|' + (cur().school?.pos ?? '') + '|' + Date.now()));
+  cur().activeSession = buildPreviewSession(cur(), today, rng);
+  store.save();
+  go('session');
+}
+
 // Launch a one-topic practice from the map. Lives in its own state slot so a
 // half-finished daily lesson in activeSession is never disturbed.
 export function startFocusSession(topicId, mode, origin = 'map') {
@@ -134,14 +152,18 @@ registerScreen('session', () => {
 // single tap. The step position lives on the session (`segIdx`), so closing the
 // tab mid-lesson resumes in the right place.
 function explainView(s) {
-  const topic = topicById(s.newTopic);
+  // A tomorrow's-lesson round shows the lesson's own intro through the same
+  // screen: previewTopicView gives it the topic shape this view expects.
+  const preview = s.kind === 'preview';
+  const topic = preview ? previewTopicView(s.lessonId) : topicById(s.newTopic);
   const steps = lessonSteps(topic);
   const idx = stepIndex(s, topic);
   const step = steps[idx];
   const wrap = h('div', { class: 'screen' });
-  wrap.append(headerBar('New topic', { onBack: () => exitSession(s) }));
+  wrap.append(headerBar(preview ? 'Tomorrow in class' : 'New topic', { onBack: () => exitSession(s) }));
 
   const card = h('div', { class: 'card lesson' });
+  if (preview) card.append(h('p', { class: 'lesson-sub' }, `🔭 Power Maths ${lessonLabel(s.lessonId)}`));
   card.append(h('h1', { class: 'lesson-title' }, topic.title));
   card.append(stepProgress(idx, steps.length));
 
@@ -264,6 +286,10 @@ function itemView(s) {
 
   if (item.part === 'review') {
     wrap.append(h('div', { class: 'review-tag' }, '🔁 ' + topicById(item.topicId).shortTitle));
+  } else if (item.tag === 'catchup') {
+    wrap.append(h('div', { class: 'review-tag' }, `📒 Today's pages · ${lessonById(item.lessonId)?.title ?? ''}`));
+  } else if (item.tag === 'preview') {
+    wrap.append(h('div', { class: 'review-tag' }, `🔭 Tomorrow · ${lessonById(item.lessonId)?.title ?? ''}`));
   }
 
   const card = h('div', { class: 'card question' });
@@ -308,18 +334,26 @@ function itemView(s) {
       setTimeout(next, firstTry ? 900 : 1400);
     } else if (item.part === 'diagnostic') {
       feedback.replaceChildren(h('div', { class: 'fb neutral' },
-        h('div', {}, 'Answer: ', h('b', { html: answerText(q) }))));
+        h('div', {}, 'Answer: ', h('b', { html: answerHtml(q) }))));
       setTimeout(next, 1300);
     } else {
       feedback.replaceChildren(h('div', { class: 'fb bad' },
-        h('div', { class: 'fb-head' }, 'The answer is ', h('b', { html: answerText(q) })),
+        h('div', { class: 'fb-head' }, 'The answer is ', h('b', { html: answerHtml(q) })),
         q.explain ? h('div', { class: 'fb-hint', html: q.explain }) : null,
         h('button', { class: 'btn primary', onclick: next }, 'Got it →'),
       ));
     }
   };
 
-  const next = () => { tts.stop(); s.idx += 1; persist(); go('session'); };
+  const next = () => {
+    tts.stop();
+    s.idx += 1;
+    // A round that opened with today's unfinished pages reaches tomorrow's
+    // intro here; the intro's "Let's practise" switches back to the items.
+    if (s.kind === 'preview' && s.introAt != null && s.idx === s.introAt && !s.checkedIn) s.phase = 'explain';
+    persist();
+    go('session');
+  };
 
   const inputHost = h('div', { class: 'input-host' }, inputControl(q, submit));
   card.append(inputHost);
@@ -333,7 +367,9 @@ function itemView(s) {
 // items belong to no topic. It costs no mastery: looking the method up is the
 // behaviour we want, and punishing it would only produce guessing.
 function reexplainRow(item) {
-  const topic = item.topicId ? topicById(item.topicId) : null;
+  // A warm-up question re-opens its LESSON intro, not the whole topic lesson.
+  const topic = item.lessonId ? previewTopicView(item.lessonId)
+    : item.topicId ? topicById(item.topicId) : null;
   if (!topic?.explanation?.segments?.length) return null;
   return h('div', { class: 'reexplain-row' },
     h('button', {
@@ -366,6 +402,13 @@ function inputControl(q, submit) {
     default:
       return h('div', {}, 'Unknown question type');
   }
+}
+
+// The correct answer as the feedback line shows it. An MC option is shown as
+// the option itself: answerText (engine/check.js, a verbatim sync) strips HTML
+// for plain text, which turned a stacked mixed number 2 3/4 into "2 34" here.
+function answerHtml(q) {
+  return q.kind === 'mc' ? String(q.options[q.answerIndex]) : answerText(q);
 }
 
 function recordResult(s, item, firstTryOk) {
@@ -408,12 +451,17 @@ function summaryView(s) {
     );
   } else {
     const t = s.newTopic ? topicById(s.newTopic) : null;
-    card.append(h('div', { class: 'big-emoji' }, '🏅'), h('h1', {}, 'Session done!'));
+    const ready = s.kind === 'preview' && s.hasPreview ? lessonById(s.lessonId) : null;
+    card.append(h('div', { class: 'big-emoji' }, ready ? '🔭' : '🏅'),
+      h('h1', {}, ready ? 'Ready for tomorrow!' : 'Session done!'));
+    if (ready) {
+      card.append(h('p', { class: 'sum-line' }, `${lessonLabel(ready.id)} · ${ready.title}`));
+    }
     if (t && s.summary.stars != null) {
       card.append(h('p', { class: 'sum-line' }, t.title), starRow(s.summary.stars, { size: 'lg' }));
     }
     if (s.summary.practice?.total) {
-      card.append(h('p', { class: 'sum-line' }, `Practise: ${s.summary.practice.ok} of ${s.summary.practice.total} first try`));
+      card.append(h('p', { class: 'sum-line' }, `${ready ? 'Warm-up' : 'Practise'}: ${s.summary.practice.ok} of ${s.summary.practice.total} first try`));
     }
     if (s.summary.review?.total) {
       card.append(h('p', { class: 'sum-line' }, `Review: ${s.summary.review.ok} of ${s.summary.review.total}`));

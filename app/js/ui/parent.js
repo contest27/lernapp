@@ -3,7 +3,7 @@
 // engine touches in the active curriculum slice. New here: a vocabulary view
 // (which English words he actually looked up) and the Year 5 backup import.
 
-import { h, store, go, cur, toast, registerScreen, rerender } from '../shell/core.js';
+import { h, store, go, cur, toast, registerScreen, rerender, homeName } from '../shell/core.js';
 import { headerBar, bandDot, starRow, numberPad } from './components.js';
 import { topics, topicById, y5Topics, completedY6 } from '../maths/content/index.js';
 import { exportJSON, parseImport, importY5Backup, dayKey, wipe } from '../shell/storage.js';
@@ -14,6 +14,8 @@ import { probeServer, serverStatus } from '../qa/endpoint.js';
 import { seedY6FromY5, seedReviewPoolFromY5, seededStrands } from '../maths/y5-bridge.js';
 import * as tts from '../tts.js';
 import { englishSection } from '../english/ui/parent-section.js';
+import { lessonById, lessonLabel, previewOf } from '../maths/content/lessons.js';
+import { predictedLesson } from '../maths/school.js';
 
 // What kind of help each logged entry was. 'translate'/'wordhelp' were the Y5
 // full-text German paths, retired 2026-08-16; they stay in the map so imported
@@ -35,7 +37,7 @@ registerScreen('parentgate', () => {
   const a = 12 + Math.floor(Math.random() * 15);
   const b = 13 + Math.floor(Math.random() * 15);
   const wrap = h('div', { class: 'screen' });
-  wrap.append(headerBar('Parent corner', { onBack: () => go('home') }));
+  wrap.append(headerBar('Parent corner', { onBack: () => go(homeName()) }));
   wrap.append(h('div', { class: 'card' },
     h('h2', {}, 'Grown-ups only 🔐'),
     h('p', {}, `To continue, work out: ${a} + ${b}`),
@@ -54,7 +56,7 @@ registerScreen('parent', () => {
   const shell = store.state.shell;
   const slice = cur();
   const wrap = h('div', { class: 'screen parent' });
-  wrap.append(headerBar('Parent corner', { onBack: () => go('home') }));
+  wrap.append(headerBar('Parent corner', { onBack: () => go(homeName()) }));
 
   // No curriculum switcher yet, on purpose: the Year 5 TOPIC MODULES have not
   // been ported (that is phase B4), so switching to an imported y5 slice would
@@ -100,6 +102,7 @@ registerScreen('parent', () => {
   if (!items.length) hist.append(h('p', { class: 'muted' }, 'No sessions yet.'));
   for (const s of items) {
     const label = s.kind === 'diagnostic' ? 'Warm-up check'
+      : s.kind === 'preview' && s.lesson ? `Ready for ${lessonLabel(s.lesson)}`
       : s.topicId ? (topicById(s.topicId)?.shortTitle ?? s.topicId) : 'Review';
     hist.append(h('div', { class: 'hrow' },
       h('span', {}, s.day), h('span', { class: 'grow' }, label),
@@ -140,8 +143,23 @@ registerScreen('parent', () => {
   }
   wrap.append(voc);
 
-  // ---- English (Wordforge) ----
-  wrap.append(englishSection(h, section));
+  // ---- English (Wordforge) — dormant since 2026-11-10, one switch away ----
+  if (shell.englishOn) wrap.append(englishSection(h, section));
+  const enSw = section('English module');
+  enSw.append(h('p', { class: 'muted' }, shell.englishOn
+    ? 'Wordforge is shown: the app opens on the hub with a Maths and an English card.'
+    : 'Wordforge is hidden: the app opens straight on maths. Its progress is kept and comes back with it.'),
+  h('button', {
+    class: 'btn subtle',
+    onclick: () => { shell.englishOn = !shell.englishOn; store.save(); toast(shell.englishOn ? 'English is back' : 'English hidden'); go('parent'); },
+  }, shell.englishOn ? 'Hide English' : 'Show English again'));
+
+  // ---- Power Maths class tracker (Year 6) — replaces the pace dials there ----
+  if (store.state.maths.active === 'y6') {
+    wrap.append(trackerSection(slice), enSw);
+  } else {
+    wrap.append(enSw);
+  }
 
   // ---- pace ----
   const pc = section('Pace');
@@ -185,7 +203,9 @@ registerScreen('parent', () => {
         }, 'Back in rotation')));
     }
   }
-  wrap.append(pc);
+  // Year 6 follows the class now; the cadence and the deferrals only steer a
+  // curriculum without a tracker.
+  if (store.state.maths.active !== 'y6') wrap.append(pc);
 
   // ---- AI tutor ----
   const ai = section('AI tutor');
@@ -400,6 +420,47 @@ registerScreen('parent', () => {
 
   return wrap;
 });
+
+// The class tracker as the parent sees it: where the class is, what comes
+// next, every check-in (finished or not), and a way to correct the position.
+function trackerSection(slice) {
+  const sec = section('Power Maths class tracker');
+  const sch = slice.school;
+  sec.append(h('p', { class: 'muted' },
+    'At a check-in he says which Power Maths lesson the class did. Each day\'s round prepares the NEXT lesson: '
+    + 'a short intro, 4 questions of its type and 2 review questions. When he reports the pages as not finished, '
+    + '2 questions of that lesson come first. Topics the class has finished join the review pool.'));
+  if (!sch.pos) {
+    sec.append(h('p', {}, 'No position yet — he is asked at the next launch.'));
+  } else {
+    const next = predictedLesson(slice);
+    sec.append(
+      h('p', {}, 'Last lesson: ', h('b', {}, `${lessonLabel(sch.pos)} ${lessonById(sch.pos).title}`)),
+      h('p', {}, 'Next: ', next
+        ? h('b', {}, `${lessonLabel(next.id)} ${next.title}${previewOf(next.id) ? '' : ' (not in the app yet — review rounds until it is)'}`)
+        : 'the book is finished'),
+    );
+  }
+  sec.append(h('button', {
+    class: 'btn subtle',
+    onclick: () => go('checkin', { step: 'browse', parent: true, unit: sch.pos ? lessonById(sch.pos).unit : 4 }),
+  }, 'Correct the position'));
+
+  const log = sch.log.slice(-12).reverse();
+  if (log.length) {
+    const recent = sch.log.filter((e) => e.lesson).slice(-10);
+    const unfinished = recent.filter((e) => e.finished === false).length;
+    sec.append(h('h3', { class: 'sub' }, 'Check-ins'),
+      h('p', { class: 'muted' }, `Not finished in class: ${unfinished} of the last ${recent.length} lessons.`));
+    for (const e of log) {
+      sec.append(h('div', { class: 'hrow' },
+        h('span', {}, e.day),
+        h('span', { class: 'grow' }, e.lesson ? `${lessonLabel(e.lesson)} ${lessonById(e.lesson)?.title ?? ''}` : 'no new lesson'),
+        h('span', {}, e.finished === true ? '✓' : e.finished === false ? '⏳ not finished' : '')));
+    }
+  }
+  return sec;
+}
 
 function section(title) {
   return h('div', { class: 'card psec' }, h('h2', { class: 'psec-title' }, title));
