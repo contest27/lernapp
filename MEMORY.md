@@ -144,6 +144,15 @@ Project-scope memory. Cross-project lessons go to `~/.claude/MEMORY.md`.
     `request_queue_size = 128`. A "MODULE IMPORTS" failure that the browser
     console cannot reproduce is this, not a syntax error.
 
+- **2026-11-10 — B10: book 6B Unit 8 Percentages** (Sebastian: "Yes, start
+  Unit 8"; Units 9–12 still wait for his go). `u08-pct-of` (L1–5) and
+  `u08-pct-equiv` (L6–9) in `y6b.js`, warm-ups in `y6b-lessons-u8.js`. The
+  spine had the pair the other way round; lesson order decides. PREREQS
+  `u08-pct-equiv ← u04-simplify` (reserved) and the new
+  `u08-pct-of ← u05-frac-amount`. Per-cent answers go through `pnum()`
+  (unit `%`) and read "35%" in the feedback; amounts through `pctOf()`, which
+  stays exact for the same reason as `dv()`.
+
 ## Learnings
 
 - (Inherited, still binding here: `Object.assign` on nested state drops new

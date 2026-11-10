@@ -352,10 +352,10 @@ async function run() {
     eq(L.lessonLabel('u04-l07'), 'U4 · L7');
   });
 
-  test('lessons: 6A and Unit 7 map to Y6 topics, in topic order; units 8-15 wait for content', () => {
-    // Content reaches as far as the class needs it next (B9, 2026-11-10: Unit 7
-    // Decimals). Moving this line is a deliberate act when the next unit lands.
-    const covered = (l) => l.book === '6A' || l.unit === 7;
+  test('lessons: 6A and Units 7-8 map to Y6 topics, in topic order; units 9-15 wait for content', () => {
+    // Content reaches as far as the class needs it next (B9: Unit 7 Decimals; B10:
+    // Unit 8 Percentages). Moving this line is a deliberate act when the next unit lands.
+    const covered = (l) => l.book === '6A' || l.unit === 7 || l.unit === 8;
     for (const l of L.LESSONS.filter(covered)) {
       ok(l.topicId && isY6Topic(l.topicId), `${l.id}: no Y6 topic`);
     }
@@ -366,8 +366,11 @@ async function run() {
     eq(L.LESSONS.filter((l) => l.unit === 7).map((l) => l.topicId),
       ['u07-dec-place', 'u07-dec-place', 'u07-dec-place', 'u07-dec-place', 'u07-dec-place',
         'u07-dec-ops', 'u07-dec-ops', 'u07-dec-ops', 'u07-dec-ops'], 'Unit 7: L1-5 place value and fractions, L6-9 operations');
-    eq(L.LESSONS.filter((l) => !covered(l) && l.topicId).length, 0, 'no topic beyond Unit 7 yet');
-    eq(L.previewOf('u08-l01'), null, 'no preview without content');
+    eq(L.LESSONS.filter((l) => l.unit === 8).map((l) => l.topicId),
+      ['u08-pct-of', 'u08-pct-of', 'u08-pct-of', 'u08-pct-of', 'u08-pct-of',
+        'u08-pct-equiv', 'u08-pct-equiv', 'u08-pct-equiv', 'u08-pct-equiv'], 'Unit 8: L1-5 percentage of, L6-9 equivalence and problems');
+    eq(L.LESSONS.filter((l) => !covered(l) && l.topicId).length, 0, 'no topic beyond Unit 8 yet');
+    eq(L.previewOf('u09-l01'), null, 'no preview without content');
   });
 
   test('lessons: navigation — next, first, last, and topics taught by a lesson', () => {
@@ -381,8 +384,8 @@ async function run() {
     eq(L.topicsTaughtBy('u04-l04').includes('u04-compare'), false, 'a topic is taught only at its LAST lesson');
   });
 
-  test('lessons: units 4-7 have lesson-precise warm-ups; the rest fall back to the topic', () => {
-    for (const l of L.LESSONS.filter((x) => x.unit >= 4 && x.unit <= 7)) {
+  test('lessons: units 4-8 have lesson-precise warm-ups; the rest fall back to the topic', () => {
+    for (const l of L.LESSONS.filter((x) => x.unit >= 4 && x.unit <= 8)) {
       const p = L.previewOf(l.id);
       ok(p && p.own, `${l.id}: no lesson-precise preview`);
       ok(p.segments.length === 1 && typeof p.segments[0].text === 'string' && p.segments[0].text.length > 20,
@@ -588,17 +591,19 @@ async function run() {
     const { answerHtml } = mods.session;
     eq(answerHtml({ kind: 'num', answer: 2.7, unit: 'pounds' }), '£2.70');
     eq(answerHtml({ kind: 'num', answer: 16, unit: 'pounds' }), '£16.00');
+    eq(answerHtml({ kind: 'num', answer: 35, unit: '%' }), '35%', 'a percentage reads 35%, not "35 %"');
     eq(answerHtml({ kind: 'num', answer: 2.7, unit: 'm' }), '2.7 m', 'other units keep the engine text');
   });
 
-  test('decimals: every Unit 7 number question offers the decimal point on the pad', () => {
-    // session.js hides "." whenever the answer is a whole number — in Unit 7,
-    // where half the answers are whole, that gives the answer away. dnum()
+  test('decimals: every Unit 7-8 number question offers the decimal point on the pad', () => {
+    // session.js hides "." whenever the answer is a whole number — in Units 7
+    // and 8, where answers are whole or not, that gives the answer away. dnum()
     // (y6b.js) sets allowDecimal on every one of them.
     let whole = 0, frac = 0;
     for (const [where, q, unit] of y6Questions()) {
-      if (unit !== 7 || q.kind !== 'num') continue;
+      if ((unit !== 7 && unit !== 8) || q.kind !== 'num') continue;
       ok(q.allowDecimal === true, `${where}: the pad would hide the decimal point`);
+      if (unit !== 7) continue;
       if (Number.isInteger(q.answer)) whole += 1; else frac += 1;
     }
     ok(whole > 20 && frac > 20, `Unit 7 should mix whole and decimal answers (whole ${whole}, decimal ${frac})`);
@@ -700,10 +705,10 @@ async function run() {
 
   test('tracker: a next lesson without content is a review round; the end of the book has no target', () => {
     const slice = trackerSlice();
-    // The first lesson without content: Unit 8 since B9 (it was Unit 7 before).
-    S.applyCheckin(slice, '2026-11-10', { lesson: 'u07-l09', finished: false });
+    // The first lesson without content: Unit 9 since B10 (Unit 8 in B9, Unit 7 before).
+    S.applyCheckin(slice, '2026-11-10', { lesson: 'u08-l09', finished: false });
     const p = S.planPreview(slice, '2026-11-10', makeRng(2));
-    eq(p.target, 'u08-l01');
+    eq(p.target, 'u09-l01');
     eq(p.hasPreview, false);
     eq(p.introAt, null);
     eq(p.items.filter((i) => i.part === 'catchup').length, 2, 'today\'s unfinished pages still come first');
@@ -902,7 +907,8 @@ async function run() {
     for (const p of ["'./js/maths/content/y6a.js'", "'./js/maths/content/y6a-u3u6.js'",
       "'./js/maths/content/y6a-frac.js'", "'./js/maths/content/glossary.js'",
       "'./js/maths/content/lessons.js'", "'./js/maths/content/y6a-lessons-u4.js'", "'./js/maths/content/y6a-lessons-u5u6.js'",
-      "'./js/maths/content/y6b.js'", "'./js/maths/content/y6b-lessons-u7.js'", "'./js/maths/content/vis.js'",
+      "'./js/maths/content/y6b.js'", "'./js/maths/content/y6b-lessons-u7.js'", "'./js/maths/content/y6b-lessons-u8.js'",
+      "'./js/maths/content/vis.js'",
       "'./js/maths/content/y5.js'", "'./js/maths/content/y5a.js'", "'./js/maths/content/y5b.js'", "'./js/maths/content/y5c.js'",
       "'./js/maths/content/diagnostic.js'", "'./js/ui/session.js'", "'./js/ui/today.js'",
       "'./js/ui/lesson.js'", "'./js/ui/gloss.js'", "'./js/ui/explain.js'", "'./js/ui/buddy.js'",
@@ -1192,6 +1198,9 @@ async function run() {
     }
     // The spine's decimals edge went live with Unit 7 (B9).
     eq(PREREQS['u07-dec-place'], ['u01-pv10m'], 'decimals build on place value to 10,000,000');
+    // ...and the percentages edges with Unit 8 (B10).
+    eq(PREREQS['u08-pct-of'], ['u05-frac-amount'], 'a percentage of an amount is a fraction of it');
+    eq(PREREQS['u08-pct-equiv'], ['u04-simplify'], 'per cent to fraction means simplifying');
     // Every prereq edge points at an existing, earlier topic.
     for (const [id, reqs] of Object.entries(PREREQS)) {
       ok(topicById(id), `PREREQS names unknown topic ${id}`);

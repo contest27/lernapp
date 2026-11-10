@@ -55,6 +55,8 @@ export function completedY6(slice) {
 export const PREREQS = {
   'u05-frac-amount': ['u02-divide'], // fraction of an amount: divide, then multiply
   'u07-dec-place': ['u01-pv10m'], // the columns carry on past the decimal point
+  'u08-pct-of': ['u05-frac-amount'], // 25 % of an amount is a quarter of it
+  'u08-pct-equiv': ['u04-simplify'], // 35/100 = 7/20
 };
 
 // Handed to the scheduler so the engine stays free of content imports.

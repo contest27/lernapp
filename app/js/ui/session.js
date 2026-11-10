@@ -5,7 +5,7 @@ import {
 } from './components.js';
 import { planSession, NEW_TOPIC_TIERS, pacing, nextNewTopic } from '../engine/scheduler.js';
 import { recordAttempt, topicsDoneToday } from '../engine/progress.js';
-import { checkAnswer, answerText } from '../engine/check.js';
+import { checkAnswer, answerText, fmt } from '../engine/check.js';
 import { dayKey } from '../engine/storage.js';
 import { makeRng, seedFromString, pick } from '../engine/rng.js';
 import { topicOrder, topicById, diagnosticItems, journeyMeta } from '../maths/content/index.js';
@@ -408,10 +408,12 @@ function inputControl(q, submit) {
 // the option itself: answerText (engine/check.js, a verbatim sync) strips HTML
 // for plain text, which turned a stacked mixed number 2 3/4 into "2 34" here.
 // The engine's answerText (verbatim from Y5) would print a money answer as
-// "2.7 pounds"; Unit 7 (B9) is the unit that teaches it is written £2.70.
+// "2.7 pounds" and a percentage as "35 %"; Units 7 and 8 (B9, B10) teach that
+// they are written £2.70 and 35%.
 export function answerHtml(q) {
   if (q.kind === 'mc') return String(q.options[q.answerIndex]);
   if (q.kind === 'num' && q.unit === 'pounds') return '£' + q.answer.toFixed(2);
+  if (q.kind === 'num' && q.unit === '%') return fmt(q.answer) + '%';
   return answerText(q);
 }
 

@@ -12,7 +12,7 @@
 // just has nothing to preview yet.
 //
 // The preview for "tomorrow's lesson" comes from a lesson-precise entry where
-// one exists (units 4–7, y6a-lessons-*.js, y6b-lessons-*.js), otherwise from
+// one exists (units 4–8, y6a-lessons-*.js, y6b-lessons-*.js), otherwise from
 // the topic itself:
 // its generator at tiers 1–2 and the first part of its explanation.
 
@@ -20,6 +20,7 @@ import { topicById, isY6Topic } from './index.js';
 import { lessonPreviewsU4 } from './y6a-lessons-u4.js';
 import { lessonPreviewsU5U6 } from './y6a-lessons-u5u6.js';
 import { lessonPreviewsU7 } from './y6b-lessons-u7.js';
+import { lessonPreviewsU8 } from './y6b-lessons-u8.js';
 
 // [unit, book, unit title, lesson titles, topic ranges [topicId, firstLesson, lastLesson]]
 const UNIT_TABLE = [
@@ -106,7 +107,7 @@ const UNIT_TABLE = [
     'Equivalent fractions, decimals and percentages (1)',
     'Equivalent fractions, decimals and percentages (2)',
     'Mixed problem solving',
-  ], []],
+  ], [['u08-pct-of', 1, 5], ['u08-pct-equiv', 6, 9]]],
   [9, '6B', 'Algebra', [
     'Finding a rule (1)',
     'Finding a rule (2)',
@@ -259,7 +260,7 @@ export function topicsTaughtBy(id) {
 }
 
 // Lesson-precise previews, keyed by lesson id.
-export const LESSON_PREVIEWS = { ...lessonPreviewsU4, ...lessonPreviewsU5U6, ...lessonPreviewsU7 };
+export const LESSON_PREVIEWS = { ...lessonPreviewsU4, ...lessonPreviewsU5U6, ...lessonPreviewsU7, ...lessonPreviewsU8 };
 
 // How many explanation parts a topic-level fallback preview borrows. The full
 // topic explanation is a whole lesson; tomorrow's warm-up only needs its start.

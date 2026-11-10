@@ -44,14 +44,13 @@ which Power Maths lesson the class did (the likely one is shown with a sample
 question, so the task type can be recognised even when the title is forgotten).
 The day's ten minutes then prepare the NEXT lesson: a short intro, four
 questions of its type and two review questions. The parent corner shows every
-check-in and whether the pages were finished. Lesson-precise warm-ups exist for
-units 4–7; the earlier lessons use their topic; lessons after the last unit
-with content are tracked, and their day is a review round. The English module is
-hidden (switch in the parent corner).
+check-in and whether the pages were finished. Lesson-precise warm-ups exist from
+Unit 4 up to the last unit with content; the earlier lessons use their topic;
+lessons after that unit are tracked, and their day is a review round. The
+English module is hidden (switch in the parent corner).
 
-Everything up to and including Unit 7 (Decimals, the first unit of book 6B) is
-practisable: its topics, guided lessons with tap-a-word German glosses, spaced
-review (Year 5 topics included), treasure map and parent corner. The rest of
-6B and book 6C are the open work; see
-`quality_reports/reference/y6-topic-spine.md` for the curriculum spine and
-`CLAUDE.md` for the phase plan.
+Everything up to the last unit with content is practisable: its topics, guided
+lessons with tap-a-word German glosses, spaced review (Year 5 topics included),
+treasure map and parent corner. How far content reaches, and what is open, is
+in `quality_reports/reference/y6-topic-spine.md` (curriculum spine) and
+`CLAUDE.md` (phase plan).

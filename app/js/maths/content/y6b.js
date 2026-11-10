@@ -1,10 +1,12 @@
-// Book 6B — Term 2. Unit 7: Decimals (phase B9, 2026-11-10).
-// Follows the official Power Maths Y6 lesson list
+// Book 6B — Term 2. Unit 7: Decimals (phase B9) and Unit 8: Percentages (B10),
+// both 2026-11-10. Follows the official Power Maths Y6 lesson list
 // (quality_reports/reference/y6-yearly-overview.md); the topic split is
 // quality_reports/reference/y6-topic-spine.md:
 //   u07-dec-place — U7 L1–5: × and ÷ by 10, 100, 1,000 (and their multiples),
 //                   decimals as fractions, fractions as decimals
 //   u07-dec-ops   — U7 L6–9: multiplying and dividing decimals by whole numbers
+//   u08-pct-of    — U8 L1–5: percentages of amounts, missing values
+//   u08-pct-equiv — U8 L6–9: fractions, decimals and percentages; mixed problems
 //
 // DECIMAL ANSWERS ARE EXACT. Every decimal value is built as an integer divided
 // by a power of ten — dv(345, 2) = 3.45 — never by float arithmetic on decimals
@@ -15,10 +17,14 @@
 // hides it whenever the answer is a whole number, which gives the answer away
 // in a unit where half the answers are whole and half are not.
 //
-// The helpers are exported for the lesson-precise warm-ups (y6b-lessons-u7.js).
+// Percentages follow the same rule: pctOf() is an integer product over a power
+// of ten, and pnum() is dnum() with the unit %.
+//
+// The helpers are exported for the lesson-precise warm-ups (y6b-lessons-u*.js).
 
 import { num, tf, mcFrom, frac, order, fr, fmt, money, scenario, ri, pick, shuffle } from './gen.js';
 import { pvChart, hundredSquare, barModel } from './vis.js';
+import { gcd } from './y6a-frac.js';
 
 // ------------------------------------------------------------------ helpers
 
@@ -57,6 +63,57 @@ export function dnum(prompt, answer, opts = {}) {
 }
 
 export const NAMES = ['Ava', 'Ben', 'Chloe', 'Dev', 'Emma', 'Finn', 'Grace', 'Hugo', 'Isla', 'Jack'];
+
+// ---- Unit 8: percentages (B10)
+
+// p % of (int / 10^places), exactly: pctOf(24, 0, 15) = 3.6 (15 % of 24).
+export const pctOf = (int, places, p) => dv(int * p, places + 2);
+
+// A number question answered in per cent: the pad offers "." too (35.5 % is
+// possible, and the key must not say "whole"), the screen says "Answer in %".
+export function pnum(prompt, answer, opts = {}) {
+  return dnum(prompt, answer, { unit: '%', ...opts });
+}
+
+// 45 -> [[25, 1], [10, 2]]: a percentage as pieces of 50/25/10/5/1 %.
+function pieces(p) {
+  const out = [];
+  for (const x of [50, 25, 10, 5, 1]) {
+    const c = Math.floor(p / x);
+    if (c) { out.push([x, c]); p -= c * x; }
+  }
+  return out;
+}
+
+// A value given in thousandths, as a percentage: 375 -> '37.5%'.
+const pctStr = (t) => `${dec(dv(t, 1))}%`;
+// '3/20 = 15%', but a percentage stays as it is: '11%', not '11% = 11%'.
+const asPct = (x) => (x.label === pctStr(x.t) ? x.label : `${x.label} = ${pctStr(x.t)}`);
+
+// `count` numbers of different value in different forms (fraction, decimal,
+// percentage) for comparing and ordering: [{ label, t }], t in thousandths.
+function mixedValues(rng, count) {
+  const base = shuffle(rng, ['frac', 'dec', 'pct']);
+  const forms = count <= 3 ? base.slice(0, count) : [...base, pick(rng, base)];
+  const used = new Set(), out = [];
+  for (const f of forms) {
+    for (let guard = 0; guard < 50; guard++) {
+      let item;
+      if (f === 'frac') {
+        const nd = pick(rng, TERMINATING);
+        item = { label: fr(...nd), t: thousandths(nd) };
+      } else if (f === 'dec') {
+        const t = 10 * ri(rng, 11, 95);
+        item = { label: dec(dv(t, 3)), t };
+      } else {
+        const t = 10 * ri(rng, 5, 95);
+        item = { label: `${t / 10}%`, t };
+      }
+      if (!used.has(item.t)) { used.add(item.t); out.push(item); break; }
+    }
+  }
+  return out;
+}
 
 const POW = { 1: '10', 2: '100', 3: '1,000' };
 const cols = (k) => (k === 1 ? 'one column' : k === 2 ? 'two columns' : 'three columns');
@@ -380,6 +437,285 @@ export const topics6b = [
         },
       ];
       return scenario(rng, 'u07-dec-ops-t3', stories);
+    },
+  },
+
+  // ---------------------------------------------------------------- Unit 8a
+  {
+    id: 'u08-pct-of', unit: 8, book: '6B', strand: 'percentages', emoji: '🏷️',
+    title: 'Percentages of amounts', shortTitle: 'Percentage of',
+    explanation: {
+      segments: [
+        {
+          text: '<b>Per cent</b> means out of 100, so the whole amount is 100%. 50% is a half, 25% is a quarter and 75% is three quarters. 50% of 60 = 60 ÷ 2 = 30. 25% of 60 = 60 ÷ 4 = 15, and 75% of 60 = 3 × 15 = 45.',
+          alt: 'Think of the whole amount as 100%. Half of 100% is 50%, so 50% of an amount is half of it. A quarter of 100% is 25%, so 25% is a quarter of the amount.',
+          svg: barModel(60, [15, 15, 15, 15], { partLabels: ['25%', '25%', '25%', '25%'], wholeLabel: '60 = 100%' }),
+        },
+        {
+          text: '10% is one tenth, so divide by 10: 10% of 240 = 24. 1% is one hundredth, so divide by 100: 1% of 300 = 3. Then multiply: 30% is 3 lots of 10%, so 30% of 240 = 3 × 24 = 72.',
+          alt: 'Cut the whole into 10 equal parts. One part is 10%. Find one part by dividing by 10, then take as many parts as you need.',
+          svg: barModel(240, Array(10).fill(24), { partLabels: Array(10).fill('24'), wholeLabel: '240 = 100% · each part 10%' }),
+        },
+        {
+          text: 'Build other percentages from the ones you know. 35% = 25% + 10%. 15% = 10% + 5%, and 5% is half of 10%. 12% = 10% + 1% + 1%. 60% = 50% + 10%. Find each piece, then add.',
+          alt: 'Split a hard percentage into easy pieces like 50%, 25%, 10%, 5% and 1%. Work out each piece of the amount, then add the pieces together.',
+        },
+        {
+          text: 'Sometimes you know a part and need the <b>whole</b>. If 10% of a number is 6, then 100% is 10 × 6 = 60. If 25% is 15, the whole is 4 × 15 = 60. To find what percentage 20 is of 80, write it as a fraction: ' + fr(20, 80) + ' = ' + fr(1, 4) + ' = 25%.',
+          alt: 'Work backwards. How many times does the percentage you know fit into 100%? Multiply the part by that number to get the whole.',
+        },
+      ],
+    },
+    example: {
+      steps: [
+        'Find 35% of £60.',
+        '10% of £60 is £60 ÷ 10 = £6.',
+        '25% of £60 is £60 ÷ 4 = £15.',
+        '35% = 25% + 10%, so 35% of £60 = £15 + £6 = <b>£21</b>.',
+      ],
+    },
+    faqs: [
+      { q: 'Is 10% always the same as dividing by 10?', a: 'Yes. 10% is one tenth, so 10% of any amount is the amount ÷ 10. In the same way, 1% is the amount ÷ 100.' },
+      { q: 'How do I find 5%?', a: 'Find 10% first, then halve it. 5% of 80: 10% is 8, so 5% is 4.' },
+      { q: 'Can the answer be a decimal?', a: 'Yes. 15% of £24 is £3.60. Work it out the same way: 10% is £2.40, 5% is £1.20, and together they make £3.60.' },
+    ],
+    gen(rng, tier) {
+      if (tier === 1) {
+        const shape = ri(rng, 1, 3);
+        if (shape === 1) {
+          const p = pick(rng, [50, 25, 75]), k = ri(rng, 2, 25), amount = 4 * k, ans = (amount * p) / 100;
+          const [name, by] = { 50: ['a half', 2], 25: ['a quarter', 4], 75: ['three quarters', 4] }[p];
+          return dnum(`What is ${p}% of ${amount}?`, ans, {
+            tier, svg: barModel(amount, [k, k, k, k], { partLabels: ['25%', '25%', '25%', '25%'], wholeLabel: `${amount} = 100%` }),
+            hint: `${p}% is ${name}.`,
+            explain: p === 75
+              ? `25% of ${amount} = ${amount} ÷ 4 = ${k}. 75% is 3 lots of 25%: 3 × ${k} = ${ans}.`
+              : `${p}% is ${name}: ${amount} ÷ ${by} = ${ans}.` });
+        }
+        if (shape === 2) {
+          const ten = rng() < 0.6, k = ten ? ri(rng, 2, 60) : ri(rng, 2, 9), amount = ten ? 10 * k : 100 * k;
+          return dnum(`What is ${ten ? 10 : 1}% of ${fmt(amount)}?`, k, {
+            tier, hint: ten ? '10% is one tenth: divide by 10.' : '1% is one hundredth: divide by 100.',
+            explain: `${ten ? 10 : 1}% of ${fmt(amount)} = ${fmt(amount)} ÷ ${ten ? 10 : 100} = ${k}.` });
+        }
+        const p = pick(rng, [20, 30, 40, 60, 70, 80, 90]), k = ri(rng, 2, 20), amount = 10 * k, ans = (p / 10) * k;
+        return dnum(`What is ${p}% of ${amount}?`, ans, {
+          tier, hint: `Find 10% first. ${p}% is ${p / 10} lots of 10%.`,
+          explain: `10% of ${amount} = ${k}. ${p}% = ${p / 10} × 10%, so ${p / 10} × ${k} = ${ans}.` });
+      }
+
+      if (tier === 2) {
+        const shape = ri(rng, 1, 4);
+        if (shape === 1) {
+          // Build the percentage from 50/25/10/5/1 % pieces.
+          const p = pick(rng, [15, 35, 45, 55, 65, 12, 21, 32]);
+          const parts = pieces(p), needOne = parts.some(([x]) => x === 1);
+          const amount = needOne ? 100 * ri(rng, 2, 9) : 20 * ri(rng, 2, 20), ans = (amount * p) / 100;
+          const say = parts.map(([x, c]) => {
+            const v = (amount * x) / 100;
+            return c === 1 ? `${x}% of ${fmt(amount)} = ${fmt(v)}` : `${x}% of ${fmt(amount)} = ${fmt(v)}, and ${c} × ${fmt(v)} = ${fmt(c * v)}`;
+          });
+          const sums = parts.map(([x, c]) => fmt((c * amount * x) / 100));
+          return dnum(`What is ${p}% of ${fmt(amount)}?`, ans, {
+            tier, hint: `Split ${p}% into pieces you know: ${parts.map(([x, c]) => (c === 1 ? `${x}%` : `${c} × ${x}%`)).join(' + ')}.`,
+            explain: `${say.join('. ')}. Add: ${sums.join(' + ')} = ${fmt(ans)}.` });
+        }
+        if (shape === 2) {
+          // Money with pence: 15 % of £24 = £3.60.
+          const p = pick(rng, [5, 15, 20, 25, 30, 35]), A = ri(rng, 12, 96);
+          const a = Math.floor(p / 10), five = p % 10 === 5;
+          const ten = dv(A * 10, 2), half = dv(A * 5, 2), ans = pctOf(A, 0, p);
+          const sum = [a ? (a === 1 ? money(ten) : `${a} × ${money(ten)}`) : '', five ? money(half) : ''].filter(Boolean);
+          const last = a > 1 || sum.length > 1 ? ` So ${p}% = ${sum.join(' + ')} = ${money(ans)}.` : '';
+          return dnum(`What is ${p}% of £${A}?`, ans, {
+            tier, unit: 'pounds', hint: 'Find 10% first (divide by 10). 5% is half of 10%.',
+            explain: `10% of £${A} = ${money(ten)}.${five ? ` 5% is half of that: ${money(half)}.` : ''}${last}` });
+        }
+        if (shape === 3) {
+          const p = pick(rng, [10, 20, 25, 50]), part = ri(rng, 2, 30), whole = (part * 100) / p;
+          return dnum(`${p}% of a number is ${part}. What is the number?`, whole, {
+            tier, hint: `How many lots of ${p}% make 100%?`,
+            explain: `${p}% fits into 100% ${100 / p} times, so the number is ${100 / p} × ${part} = ${fmt(whole)}.` });
+        }
+        const [whole, p] = pick(rng, [[80, 25], [40, 10], [60, 50], [200, 30], [50, 20], [20, 75], [300, 5], [40, 75], [500, 40], [25, 60]]);
+        const part = (whole * p) / 100;
+        return pnum(`What percentage of ${whole} is ${part}?`, p, {
+          tier, hint: `Write ${part} out of ${whole} as a fraction, then make the denominator 100.`,
+          explain: `${fr(part, whole)} = ${fr(p, 100)}, so ${part} is ${p}% of ${whole}.` });
+      }
+
+      const stories = [
+        (r) => {
+          const price = 20 * ri(r, 2, 10), p = pick(r, [10, 20, 25, 50, 30]), off = (price * p) / 100;
+          return dnum(`A coat costs £${price}. In a sale there is ${p}% off. What is the sale price?`, price - off, {
+            tier: 3, unit: 'pounds', hint: `Find ${p}% of £${price} first. Then take it away.`,
+            explain: `${p}% of £${price} = £${off}. £${price} − £${off} = £${price - off}.` });
+        },
+        (r) => {
+          const [n, p] = pick(r, [[30, 40], [25, 20], [20, 35], [40, 75], [50, 30], [30, 70], [25, 60]]);
+          const ans = (n * p) / 100;
+          return dnum(`There are ${n} children in a class. ${p}% of them walk to school. How many children walk to school?`, ans, {
+            tier: 3, hint: `Find 10% (or 5%) of ${n} first and build ${p}% from it.`,
+            explain: `${p}% of ${n} = ${n} × ${p} ÷ 100 = ${ans}.` });
+        },
+        (r) => {
+          const name = pick(r, NAMES), p = pick(r, [10, 20, 25, 50]), part = 5 * ri(r, 3, 20), whole = (part * 100) / p;
+          return dnum(`${name} has read ${p}% of a book. That is ${part} pages. How many pages does the book have?`, whole, {
+            tier: 3, hint: `${part} pages are ${p}%. How many lots of ${p}% make 100%?`,
+            explain: `100% is ${100 / p} × ${p}%, so the book has ${100 / p} × ${part} = ${whole} pages.` });
+        },
+        (r) => {
+          const a = [pick(r, [20, 30, 40, 60]), 10 * ri(r, 3, 12)], b = [pick(r, [25, 50, 75]), 4 * ri(r, 5, 30)];
+          const va = (a[0] * a[1]) / 100, vb = (b[0] * b[1]) / 100;
+          const la = `${a[0]}% of ${a[1]}`, lb = `${b[0]}% of ${b[1]}`, same = 'They are the same';
+          const right = va === vb ? same : va > vb ? la : lb;
+          return mcFrom(r, `Which is more: ${la} or ${lb}?`, right, [la, lb, same].filter((x) => x !== right), {
+            tier: 3, hint: 'Work out both, then compare.',
+            explain: `${la} = ${fmt(va)} and ${lb} = ${fmt(vb)}.${va === vb ? ' They are the same.' : ''}` });
+        },
+        (r) => {
+          const tenths = ri(r, 12, 30), p = pick(r, [10, 20, 30, 40, 50]), ans = pctOf(tenths, 1, p);
+          return dnum(`A bag holds ${dec(dv(tenths, 1))} kg of flour. A recipe uses ${p}% of it. How many kg is that?`, ans, {
+            tier: 3, unit: 'kg', hint: `10% of ${dec(dv(tenths, 1))} kg is ${dec(dv(tenths, 2))} kg.`,
+            explain: `10% = ${dec(dv(tenths, 2))} kg, so ${p}% = ${p / 10} × ${dec(dv(tenths, 2))} = ${dec(ans)} kg.` });
+        },
+      ];
+      return scenario(rng, 'u08-pct-of-t3', stories);
+    },
+  },
+
+  // ---------------------------------------------------------------- Unit 8b
+  {
+    id: 'u08-pct-equiv', unit: 8, book: '6B', strand: 'percentages', emoji: '🔁',
+    title: 'Fractions, decimals and percentages', shortTitle: 'Fractions, decimals, %',
+    explanation: {
+      segments: [
+        {
+          text: 'A percentage is a number of hundredths. To change a fraction into a percentage, find an <b>equivalent fraction</b> with 100 at the bottom: ' + fr(3, 5) + ' = ' + fr(60, 100) + ' = 60% and ' + fr(7, 20) + ' = ' + fr(35, 100) + ' = 35%.',
+          alt: 'Make the denominator 100. Whatever you multiply the bottom by, multiply the top by the same number. The new top number is the percentage.',
+          svg: hundredSquare(35),
+        },
+        {
+          text: 'Decimals and percentages: 0.35 is 35 hundredths, so 0.35 = 35%. To go from a decimal to a percentage, multiply by 100. To go back, divide by 100: 8% = 0.08 and 0.8 = 80%.',
+          alt: 'Per cent means hundredths. 0.8 is 8 tenths, and 8 tenths are 80 hundredths, so 0.8 is 80%, not 8%.',
+        },
+        {
+          text: 'To write a percentage as a fraction, put it over 100 and <b>simplify</b>: 45% = ' + fr(45, 100) + ' = ' + fr(9, 20) + ' and 4% = ' + fr(4, 100) + ' = ' + fr(1, 25) + '.',
+          alt: 'Write the percentage on top of 100. Then divide the top and the bottom by the same number until you cannot simplify any more.',
+        },
+        {
+          text: 'To compare or order fractions, decimals and percentages, change them all into the same form. Percentages are often easiest. Which is bigger, ' + fr(3, 5) + ' or 0.55? ' + fr(3, 5) + ' = 60% and 0.55 = 55%, so ' + fr(3, 5) + ' is bigger.',
+          alt: 'You cannot compare numbers in different forms just by looking. Turn each one into a percentage first, then compare.',
+        },
+      ],
+    },
+    example: {
+      steps: [
+        'Put ' + fr(3, 5) + ', 0.55 and 62% in order, smallest first.',
+        fr(3, 5) + ' = ' + fr(60, 100) + ' = 60%.',
+        '0.55 = 55 hundredths = 55%.',
+        'So the order is <b>0.55, ' + fr(3, 5) + ', 62%</b>.',
+      ],
+    },
+    faqs: [
+      { q: 'Is 0.4 the same as 4%?', a: 'No. 0.4 is 4 tenths, which is 40 hundredths, so 0.4 = 40%. 4% is 0.04.' },
+      { q: 'What if the denominator does not go into 100?', a: 'Try simplifying first: ' + fr(12, 40) + ' = ' + fr(3, 10) + ' = 30%. Or divide: ' + fr(3, 8) + ' = 3 ÷ 8 = 0.375 = 37.5%.' },
+      { q: 'Which form is best for comparing?', a: 'Usually percentages, because then every number is out of 100.' },
+    ],
+    gen(rng, tier) {
+      if (tier === 1) {
+        const shape = ri(rng, 1, 3);
+        if (shape === 1) {
+          const d = pick(rng, [2, 4, 5, 10, 20, 25, 50]), n = ri(rng, 1, d - 1), m = 100 / d, p = n * m;
+          return pnum(`Write ${fr(n, d)} as a percentage.`, p, {
+            tier, hint: 'Make the denominator 100.',
+            explain: `${d} × ${m} = 100, so ${fr(n, d)} = ${fr(p, 100)} = ${p}%.` });
+        }
+        if (shape === 2) {
+          const p = rng() < 0.3 ? 10 * ri(rng, 1, 9) : ri(rng, 1, 99);
+          return pnum(`Write ${dec(dv(p, 2))} as a percentage.`, p, {
+            tier, hint: 'Per cent means hundredths. How many hundredths is it?',
+            explain: `${dec(dv(p, 2))} = ${p} hundredths = ${p}%.` });
+        }
+        const p = rng() < 0.3 ? ri(rng, 1, 9) : ri(rng, 11, 99);
+        return dnum(`Write ${p}% as a decimal.`, dv(p, 2), {
+          tier, hint: `${p}% is ${p} hundredths.`,
+          explain: `${p}% = ${fr(p, 100)} = ${dec(dv(p, 2))}.` });
+      }
+
+      if (tier === 2) {
+        const shape = ri(rng, 1, 4);
+        if (shape === 1) {
+          const p = pick(rng, [4, 5, 8, 12, 15, 24, 25, 35, 40, 45, 55, 60, 64, 75, 80, 85]), g = gcd(p, 100);
+          return frac(`Write ${p}% as a fraction in its simplest form.`, p / g, 100 / g, {
+            exact: true, tier, hint: `Write ${p} over 100, then simplify.`,
+            explain: `${p}% = ${fr(p, 100)}. Divide the top and the bottom by ${g}: ${fr(p / g, 100 / g)}.` });
+        }
+        if (shape === 2) {
+          // Simplify first, or "n out of m": 18 out of 24 = 3/4 = 75 %.
+          const [n0, d0] = pick(rng, [[1, 2], [1, 4], [3, 4], [1, 5], [2, 5], [3, 5], [4, 5], [3, 10], [7, 10], [9, 10], [7, 20], [11, 20]]);
+          const k = pick(rng, [2, 3, 4, 6]), n = n0 * k, d = d0 * k, p = (n0 * 100) / d0;
+          if (rng() < 0.5) {
+            const name = pick(rng, NAMES);
+            return pnum(`A test has ${d} marks. ${name} scores ${n}. What percentage is that?`, p, {
+              tier, hint: `Write ${n} out of ${d} as a fraction. Simplify it, then make the denominator 100.`,
+              explain: `${fr(n, d)} = ${fr(n0, d0)} = ${fr(p, 100)} = ${p}%.` });
+          }
+          return pnum(`Write ${fr(n, d)} as a percentage.`, p, {
+            tier, hint: 'Simplify the fraction first, then make the denominator 100.',
+            explain: `${fr(n, d)} = ${fr(n0, d0)} = ${fr(p, 100)} = ${p}%.` });
+        }
+        const items = mixedValues(rng, shape === 3 ? 2 : 3);
+        if (shape === 3) {
+          const [a, b] = items, right = a.t > b.t ? a.label : b.label;
+          return mcFrom(rng, `Which is greater: ${a.label} or ${b.label}?`, right, [a.label, b.label].filter((x) => x !== right), {
+            tier, hint: 'Change both into percentages first.',
+            explain: `${asPct(a)} and ${asPct(b)}, so ${right} is greater.` });
+        }
+        const sorted = items.slice().sort((x, y) => x.t - y.t);
+        return order('Put these in order, <b>smallest first</b>.', rng, sorted.map((x) => x.label), {
+          tier, hint: 'Change them all into percentages, then order them.',
+          explain: `As percentages: ${sorted.map(asPct).join(', ')}.` });
+      }
+
+      const stories = [
+        (r) => {
+          const [n, d] = pick(r, [[3, 5], [1, 4], [3, 4], [2, 5], [7, 10], [7, 20], [9, 20], [12, 25]]), p = (n * 100) / d;
+          const fruit = pick(r, ['apples', 'bananas', 'grapes', 'oranges']);
+          return pnum(`In a survey, ${fr(n, d)} of the children chose ${fruit}. What percentage did NOT choose ${fruit}?`, 100 - p, {
+            tier: 3, hint: `Change ${fr(n, d)} into a percentage first. The whole is 100%.`,
+            explain: `${fr(n, d)} = ${p}%. 100% − ${p}% = ${100 - p}%.` });
+        },
+        (r) => {
+          const name = pick(r, NAMES), t = ri(r, 1, 9), truth = r() < 0.5;
+          const shown = truth ? 10 * t : t;
+          return tf(`${name} says ${dec(dv(t, 1))} = ${shown}%. Is ${name} right?`, truth, {
+            tier: 3, hint: `${dec(dv(t, 1))} is ${t} tenths. How many hundredths is that?`,
+            explain: `${dec(dv(t, 1))} = ${t} tenths = ${10 * t} hundredths = ${10 * t}%.${truth ? '' : ` ${t}% would be ${dec(dv(t, 2))}.`}` });
+        },
+        (r) => {
+          const items = mixedValues(r, 4), sorted = items.slice().sort((x, y) => y.t - x.t);
+          return order('Put these in order, <b>largest first</b>.', r, sorted.map((x) => x.label), {
+            tier: 3, hint: 'Change them all into percentages, then start with the biggest.',
+            explain: `As percentages: ${sorted.map(asPct).join(', ')}.` });
+        },
+        (r) => {
+          const a = pick(r, NAMES), b = pick(r, NAMES.filter((x) => x !== a));
+          const [n, d] = pick(r, [[18, 25], [16, 20], [21, 25], [7, 10], [13, 20], [42, 50]]), pa = (n * 100) / d;
+          const pb = pa + pick(r, [-10, -5, 5, 10, 0]);
+          const same = 'They scored the same', right = pa === pb ? same : pa > pb ? a : b;
+          return mcFrom(r, `${a} scored ${n} out of ${d} in a test. ${b} scored ${pb}%. Who did better?`, right, [a, b, same].filter((x) => x !== right), {
+            tier: 3, hint: `Change ${n} out of ${d} into a percentage.`,
+            explain: `${fr(n, d)} = ${fr(pa, 100)} = ${pa}%, and ${b} scored ${pb}%.${pa === pb ? ' The same.' : ''}` });
+        },
+        (r) => {
+          const p = pick(r, [35, 45, 55, 65, 15, 85, 24, 76]), q = 100 - p, g = gcd(q, 100);
+          return frac(`${p}% of the children in a class are girls. What fraction are boys? Give it in its simplest form.`, q / g, 100 / g, {
+            exact: true, tier: 3, hint: 'Find the percentage of boys first. Then write it over 100 and simplify.',
+            explain: `100% − ${p}% = ${q}%. ${q}% = ${fr(q, 100)} = ${fr(q / g, 100 / g)}.` });
+        },
+      ];
+      return scenario(rng, 'u08-pct-equiv-t3', stories);
     },
   },
 ];

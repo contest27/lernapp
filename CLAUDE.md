@@ -80,6 +80,7 @@ B4 Y5 topics as review material ✓ (2026-09-07; review-only days spread over 5 
 B8 class tracker + tomorrow's-lesson warm-up ✓ (2026-11-10; lesson register
 `content/lessons.js`, lesson-precise previews U4–U6, `maths/school.js`, English hidden) →
 B9 four-quadrant grid for U6 L2–L4 + book 6B Unit 7 Decimals ✓ (2026-11-10;
-`coordGrid4` in vis.js, topics in `content/y6b.js`, warm-ups `y6b-lessons-u7.js`) —
-open: Units 8–12 (6B) and 6C; Unit 8 follows about two school weeks after Unit 7.
+`coordGrid4` in vis.js, topics in `content/y6b.js`, warm-ups `y6b-lessons-u7.js`) →
+B10 Unit 8 Percentages ✓ (2026-11-10; topics in `y6b.js`, warm-ups `y6b-lessons-u8.js`) —
+open: Units 9–12 (6B) and 6C; each 6B unit is about two school weeks of class time.
 Plan of record: `~/.claude/plans/inherited-crafting-lantern.md`.
