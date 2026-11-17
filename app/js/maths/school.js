@@ -11,7 +11,8 @@
 //
 // Pure: dates and slices in, decisions out. No DOM, no store.
 
-import { lessonById, lessonIndex, nextLesson, topicsTaughtBy, previewOf } from './content/lessons.js';
+import { lessonById, lessonIndex, nextLesson, topicsTaughtBy, previewOf, lessonsOfUnit } from './content/lessons.js';
+import { shuffle } from '../engine/rng.js';
 import { topicById } from './content/index.js';
 import { newMastery, scheduleAfterSession } from '../engine/mastery.js';
 import { dueReviewTopics, reviewTier } from '../engine/scheduler.js';
@@ -91,7 +92,9 @@ export function markTaught(slice, topicId, today) {
 // Jumping several lessons ahead (a check-in he missed) and stepping back both
 // work. Topics already marked taught stay taught on a step back.
 // Mutates the slice; returns { pos, taught: [topicIds newly in the pool] }.
-export function applyCheckin(slice, today, { lesson = null, finished = null } = {}) {
+// `note: 'test'` records the day the class wrote its unit test; it also ends
+// the test practice (B11).
+export function applyCheckin(slice, today, { lesson = null, finished = null, note = null } = {}) {
   const s = slice.school;
   if (lesson && !lessonById(lesson)) throw new Error('unknown lesson ' + lesson);
   const prior = s.log.find((e) => e.day === today);
@@ -101,8 +104,9 @@ export function applyCheckin(slice, today, { lesson = null, finished = null } = 
   }
   const before = s.pos;
   if (lesson) s.pos = lesson;
-  s.log.push({ day: today, lesson, finished: lesson ? finished : null, before });
+  s.log.push({ day: today, lesson, finished: lesson ? finished : null, before, ...(note ? { note } : {}) });
   s.lastCheckin = today;
+  if (note === 'test') clearTest(slice);
   const taught = [];
   if (s.pos) {
     for (const id of topicsTaughtBy(s.pos)) if (markTaught(slice, id, today)) taught.push(id);
@@ -231,6 +235,104 @@ export function previewTopicView(lessonId) {
     example: p.example,
     faqs: p.topic.faqs ?? [],
   };
+}
+
+// ------------------------------------------------------------------ unit tests (B11)
+
+// The class writes a test at the end of a unit. Once Severin or a parent has
+// entered the day, practice for the whole unit becomes the main card on Today
+// until the test is over. Decided 2026-11-17: the round uses the normal
+// practice mechanics (hint, second try) — it is practice for a test, not a
+// mock exam.
+
+export const TEST_TIER = 2;
+export const TRICKY_TIERS = [1, 2];
+
+export function setTest(slice, unit, day, today) {
+  slice.school.test = { unit, day, set: today };
+  return slice.school.test;
+}
+
+export function clearTest(slice) {
+  slice.school.test = null;
+}
+
+// The announced test while it still lies ahead. On the test day itself it stays
+// until that day's check-in, so a practice round before school still works and
+// the card is gone once he has reported the day.
+export function activeTest(slice, today) {
+  const t = slice.school?.test;
+  if (!t) return null;
+  if (today < t.day) return t;
+  if (today === t.day && slice.school.lastCheckin !== today) return t;
+  return null;
+}
+
+// The unit a test is most likely about: the one of the last reported lesson.
+export function testUnitDefault(slice) {
+  const l = lessonById(slice.school?.pos);
+  return l ? l.unit : null;
+}
+
+// The lessons of a unit that have something to practise.
+export function testLessons(unit) {
+  return lessonsOfUnit(unit).filter((l) => previewOf(l.id)).map((l) => l.id);
+}
+
+// The test round as a session. Full round: one question per lesson of the unit
+// at the standard tier, shuffled the way a test mixes them (Unit 4: eleven, the
+// usual sitting). With `lessonIds`: the "tricky ones" round, two questions per
+// lesson, easy then standard, in book order.
+export function buildTestSession(slice, today, rng, unit, lessonIds = null) {
+  const specs = [];
+  if (lessonIds?.length) {
+    for (const id of lessonIds) for (const tier of TRICKY_TIERS) specs.push({ id, tier });
+  } else {
+    for (const id of shuffle(rng, testLessons(unit))) specs.push({ id, tier: TEST_TIER });
+  }
+  const seen = [];
+  const items = specs.map(({ id, tier }) => {
+    const p = previewOf(id);
+    let q = p.gen(rng, tier);
+    for (let i = 0; i < 4 && seen.includes(q.prompt); i++) q = p.gen(rng, tier);
+    seen.push(q.prompt);
+    return { q, topicId: p.lesson.topicId, lessonId: id, part: 'practice', tag: 'test' };
+  });
+  return {
+    day: today,
+    build: BUILD,
+    kind: 'test',
+    testUnit: unit,
+    tricky: !!lessonIds?.length,
+    lessonIds: [...new Set(specs.map((s) => s.id))],
+    newTopic: null,
+    phase: 'items',
+    items, idx: 0,
+    results: [],
+    diag: {},
+    startedAt: Date.now(),
+    segIdx: 0,
+  };
+}
+
+// First-try results per lesson, in book order: [{ lessonId, ok, total }]. A
+// lesson is "practise more" unless every one of its questions was right first time.
+export function testResults(s) {
+  const by = new Map((s.lessonIds ?? []).map((id) => [id, { lessonId: id, ok: 0, total: 0 }]));
+  for (const r of s.results ?? []) {
+    const e = r.lessonId && by.get(r.lessonId);
+    if (!e) continue;
+    e.total += 1;
+    if (r.ok) e.ok += 1;
+  }
+  return [...by.values()]
+    .filter((e) => e.total > 0)
+    .sort((a, b) => lessonIndex(a.lessonId) - lessonIndex(b.lessonId))
+    .map((e) => ({ ...e, solid: e.ok === e.total }));
+}
+
+export function weakLessons(s) {
+  return testResults(s).filter((e) => !e.solid).map((e) => e.lessonId);
 }
 
 // Where the class is in the book, for the progress line: 1-based lesson count.

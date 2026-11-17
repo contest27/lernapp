@@ -46,7 +46,10 @@ The day's ten minutes then prepare the NEXT lesson: a short intro, four
 questions of its type and two review questions. The parent corner shows every
 check-in and whether the pages were finished. Lesson-precise warm-ups exist from
 Unit 4 up to the last unit with content; the earlier lessons use their topic;
-lessons after that unit are tracked, and their day is a review round. The
+lessons after that unit are tracked, and their day is a review round. Before
+a unit test (the day is entered by the child or in the parent corner) the
+round becomes practice for the whole unit, one question per lesson, with a
+per-lesson result and a short round on the lessons that went wrong. The
 English module is hidden (switch in the parent corner).
 
 Everything up to the last unit with content is practisable: its topics, guided

@@ -754,13 +754,73 @@ async function run() {
     delete old.maths.y6.school;
     const h1 = shellStorage.hydrate(JSON.parse(JSON.stringify(old)));
     eq(h1.shell.englishOn, false, 'English is hidden on an existing install');
-    eq(h1.maths.y6.school, { pos: null, lastCheckin: null, log: [] });
+    eq(h1.maths.y6.school, { pos: null, lastCheckin: null, log: [], test: null });
     const kept = shellStorage.defaultState();
     kept.maths.y6.school = { pos: 'u04-l03', log: [{ day: '2026-11-09', lesson: 'u04-l03', finished: true, before: null }] };
     const h2 = shellStorage.hydrate(JSON.parse(JSON.stringify(kept)));
     eq(h2.maths.y6.school.pos, 'u04-l03', 'a stored position survives');
     eq(h2.maths.y6.school.lastCheckin, null, 'a missing key is filled one level deep');
+    eq(h2.maths.y6.school.test, null, 'a B8 slice gains the B11 test slot');
     eq(h2.maths.y6.school.log.length, 1);
+  });
+
+  // ---- unit test practice (B11) ----
+
+  test('test practice: the card is active until the test, and on the test day until the check-in', () => {
+    const slice = trackerSlice();
+    S.applyCheckin(slice, '2026-11-16', { lesson: 'u04-l11', finished: true });
+    eq(S.testUnitDefault(slice), 4, 'the unit of the last reported lesson');
+    eq(S.activeTest(slice, '2026-11-17'), null, 'nothing set');
+    S.setTest(slice, 4, '2026-11-19', '2026-11-17');
+    eq(S.activeTest(slice, '2026-11-17').unit, 4, 'two days ahead');
+    eq(S.activeTest(slice, '2026-11-18').day, '2026-11-19', 'the day before');
+    ok(S.activeTest(slice, '2026-11-19'), 'the test day, before checking in');
+    S.applyCheckin(slice, '2026-11-19', { lesson: null });
+    eq(S.activeTest(slice, '2026-11-19'), null, 'the test day after checking in');
+    eq(S.activeTest(slice, '2026-11-20'), null, 'after the test');
+  });
+
+  test('test practice: "we had the test" logs it and ends the test practice', () => {
+    const slice = trackerSlice();
+    S.applyCheckin(slice, '2026-11-16', { lesson: 'u04-l11', finished: true });
+    S.setTest(slice, 4, '2026-11-19', '2026-11-17');
+    S.applyCheckin(slice, '2026-11-19', { lesson: null, note: 'test' });
+    eq(slice.school.test, null);
+    eq(slice.school.log.at(-1).note, 'test');
+    eq(slice.school.pos, 'u04-l11', 'the test is not a lesson');
+  });
+
+  test('test practice: a full round is one question per lesson; the tricky round two per weak lesson', () => {
+    const slice = trackerSlice();
+    const s = S.buildTestSession(slice, dayKeyToday(), makeRng(9), 4);
+    eq(s.kind, 'test');
+    eq(s.testUnit, 4);
+    eq(s.build, mods.build.BUILD);
+    eq(s.items.length, 11, 'Unit 4 has eleven lessons');
+    eq(new Set(s.items.map((i) => i.lessonId)).size, 11, 'one per lesson');
+    ok(s.items.every((i) => i.lessonId.startsWith('u04-') && i.part === 'practice' && i.tag === 'test'));
+    ok(s.items.every((i) => i.q.tier === S.TEST_TIER), 'the standard tier');
+    for (const it of s.items) ok(checkAnswer(it.q, correctInput(it.q)).ok, it.lessonId + ': rejects its own answer');
+    ok(mods.session.isResumable(s));
+
+    const t = S.buildTestSession(slice, dayKeyToday(), makeRng(9), 4, ['u04-l08', 'u04-l09']);
+    eq(t.tricky, true);
+    eq(t.items.map((i) => [i.lessonId, i.q.tier]), [['u04-l08', 1], ['u04-l08', 2], ['u04-l09', 1], ['u04-l09', 2]]);
+  });
+
+  test('test practice: results per lesson, and the history names the unit and the weak lessons', () => {
+    const slice = trackerSlice();
+    const s = S.buildTestSession(slice, dayKeyToday(), makeRng(4), 4);
+    const wrong = new Set(['u04-l03', 'u04-l09']);
+    s.results = s.items.map((i) => ({ part: i.part, topicId: i.topicId, lessonId: i.lessonId, ok: !wrong.has(i.lessonId) }));
+    const rows = S.testResults(s);
+    eq(rows.map((r) => r.lessonId), mods.lessons.lessonsOfUnit(4).map((l) => l.id), 'in book order');
+    eq(S.weakLessons(s), ['u04-l03', 'u04-l09']);
+    mods.focus.applySessionEnd(slice, s, dayKeyToday());
+    const e = slice.history.at(-1);
+    eq([e.kind, e.unit, e.weak, e.total, e.correct], ['test', 4, ['u04-l03', 'u04-l09'], 11, 9]);
+    eq(slice.streak.lastDay, dayKeyToday(), 'test practice counts as the day\'s learning');
+    eq(Object.keys(slice.stars).length, 0, 'and completes no topic');
   });
 
   // ==================== D. HUB STORAGE (fresh — pins the shell's design) ====================

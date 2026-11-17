@@ -10,15 +10,16 @@
 
 import { h, store, go, cur, toast, registerScreen } from '../shell/core.js';
 import { headerBar, progressBar } from './components.js';
-import { dayKey } from '../engine/storage.js';
+import { dayKey, addDays } from '../engine/storage.js';
 import { makeRng, seedFromString } from '../engine/rng.js';
 import {
   UNITS, lessonById, lessonsOfUnit, lessonLabel, previewOf, unitById, LESSONS, nextLesson,
 } from '../maths/content/lessons.js';
 import {
   applyCheckin, checkinDue, predictedLesson, isSchoolDay, planPreview, lessonsDone,
+  activeTest, setTest, clearTest, testLessons, testUnitDefault, weekday,
 } from '../maths/school.js';
-import { startOrResumePreview } from './session.js';
+import { startOrResumePreview, startOrResumeTest } from './session.js';
 import { attachGloss } from './gloss.js';
 
 // A recognisable example of a lesson's task type — always the same one for the
@@ -46,10 +47,10 @@ function lessonHeading(id) {
     h('span', { class: 'ci-title' }, l.title));
 }
 
-function finish(params, lesson, finished) {
+function finish(params, lesson, finished, note = null) {
   const slice = cur();
   const today = dayKey();
-  applyCheckin(slice, today, { lesson, finished });
+  applyCheckin(slice, today, { lesson, finished, note });
   // A round built before this check-in prepared the wrong lesson.
   const s = slice.activeSession;
   if (s && s.kind === 'preview' && s.phase !== 'summary') slice.activeSession = null;
@@ -111,8 +112,14 @@ registerScreen('checkin', (params) => {
         class: 'btn primary wide big',
         onclick: () => go('checkin', { ...p, step: 'finished', lessonId: predicted.id }),
       }, '✅ Yes, we did this one'));
+    // On (or after) an announced test day, the test is the likely answer.
+    const test = slice.school.test;
+    const hadTest = test && test.day <= today
+      ? h('button', { class: 'btn primary wide', onclick: () => finish(p, null, null, 'test') }, `📝 We had the Unit ${test.unit} test today`)
+      : null;
     card.append(cand,
       h('div', { class: 'ci-buttons' },
+        hadTest,
         h('button', { class: 'btn subtle wide', onclick: () => finish(p, null, null) }, '⏸ No new lesson today'),
         h('button', {
           class: 'btn subtle wide',
@@ -188,11 +195,20 @@ export function schoolTodayCard(slice, today) {
     return card;
   }
 
+  // A unit test ahead (B11). On the test day itself the practice comes first —
+  // he may open the app before school — and the check-in waits behind it.
+  const test = activeTest(slice, today);
+  if (test && (test.day === today || !checkinDue(slice, today))) {
+    return testTodayCard(slice, today, test, card);
+  }
+
   if (checkinDue(slice, today)) {
     card.append(h('h2', {}, 'Power Maths check-in 📒'),
       h('p', {}, isSchoolDay(today) ? 'What did you do in maths today?' : 'What did you do in your last maths lesson?'),
       h('p', { class: 'muted' }, `Last time: ${lessonLabel(pos)} ${lessonById(pos).title}`),
-      h('button', { class: 'btn primary wide big start', onclick: () => go('checkin') }, 'Check in ▶'));
+      h('button', { class: 'btn primary wide big start', onclick: () => go('checkin') }, 'Check in ▶'),
+      h('button', { class: 'ci-change', onclick: () => go('testdate') },
+        test ? `📝 Unit ${test.unit} test ${whenLabel(test.day, today)} — change` : '📝 Test coming up?'));
     return card;
   }
 
@@ -228,12 +244,114 @@ export function schoolTodayCard(slice, today) {
   }
   const last = slice.school.log.at(-1);
   const lastLine = last && last.day === today && !last.lesson
-    ? `No new lesson today · last: ${lessonLabel(pos)}`
+    ? `${last.note === 'test' ? 'Unit test today' : 'No new lesson today'} · last: ${lessonLabel(pos)}`
     : `Last lesson: ${lessonLabel(pos)} ${lessonById(pos).title}`;
   card.append(h('button', { class: 'ci-change', onclick: () => go('checkin', { step: 'pick' }) },
-    `✏️ ${lastLine} — change`));
+    `✏️ ${lastLine} — change`),
+  h('button', { class: 'ci-change', onclick: () => go('testdate') }, '📝 Test coming up?'));
   return card;
 }
+
+// "on Thursday", "tomorrow", "today" — how the card names the test day.
+function whenLabel(day, today) {
+  if (day === today) return 'today';
+  if (day === addDays(today, 1)) return 'tomorrow';
+  return 'on ' + WEEKDAYS[weekday(day)];
+}
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// The Today card while a unit test lies ahead: test practice is the main
+// button, tomorrow's warm-up stays one tap away.
+function testTodayCard(slice, today, test, card) {
+  const s = slice.activeSession;
+  const inProgress = s && s.kind === 'test' && s.day === today && s.phase !== 'summary';
+  const todays = slice.history.filter((e) => e.day === today && e.kind === 'test');
+  const lastWeak = todays.at(-1)?.weak ?? [];
+  const n = testLessons(test.unit).length;
+
+  card.append(h('h2', {}, `📝 Unit ${test.unit} test ${whenLabel(test.day, today)}`),
+    h('p', {}, `${unitById(test.unit).title}: ${n} questions, one from every lesson — practise the whole unit.`));
+  if (inProgress) card.append(h('p', { class: 'muted' }, 'You were part-way through. Pick up where you left off!'));
+  card.append(h('button', { class: 'btn primary wide big start', onclick: () => startOrResumeTest(test.unit) },
+    inProgress ? 'Continue ▶' : todays.length ? 'Practise again ▶' : 'Start test practice ▶'));
+  if (!inProgress && lastWeak.length) {
+    card.append(h('button', { class: 'btn subtle wide', onclick: () => startOrResumeTest(test.unit, lastWeak) },
+      `Practise the tricky ones (${lastWeak.length}) ▶`));
+  }
+  if (todays.length && !inProgress) {
+    card.append(h('p', { class: 'muted center-t' }, lastWeak.length
+      ? '✅ Test practice done today.'
+      : '✅ Test practice done today — every lesson right first time!'));
+  }
+
+  const plan = planPreview(slice, today, makeRng(seedFromString(today)));
+  if (plan.hasPreview) {
+    card.append(h('button', { class: 'btn subtle wide', onclick: startOrResumePreview },
+      `🔭 Tomorrow's warm-up: ${lessonLabel(plan.target)}`));
+  }
+  if (checkinDue(slice, today)) {
+    card.append(h('button', { class: 'btn subtle wide', onclick: () => go('checkin') }, '📒 Check in: what did you do in maths today?'));
+  }
+  card.append(h('button', { class: 'ci-change', onclick: () => go('testdate') }, '📝 Change the test day'));
+  return card;
+}
+
+// ------------------------------------------------------------------ test day
+
+// "When is the test?" — the unit (preset to the class's current one) and the
+// next school days by name. Reached from the Today card and the parent corner.
+registerScreen('testdate', (params) => {
+  const p = params ?? {};
+  const slice = cur();
+  const today = dayKey();
+  const back = () => go(p.parent ? 'parent' : 'today');
+  const current = slice.school.test;
+  const def = testUnitDefault(slice) ?? 1;
+  const units = [def, def - 1].filter((u) => u >= 1 && testLessons(u).length);
+  const unit = p.unit ?? current?.unit ?? units[0] ?? def;
+
+  const wrap = h('div', { class: 'screen' });
+  wrap.append(headerBar('Unit test', { onBack: back }));
+  const card = h('div', { class: 'card checkin-card' });
+  wrap.append(card);
+
+  card.append(h('h2', {}, 'Which unit is the test about?'));
+  const chips = h('div', { class: 'ci-unitrow' });
+  for (const u of units) {
+    chips.append(h('button', {
+      class: 'chip ci-unit' + (u === unit ? ' on' : ''),
+      onclick: () => go('testdate', { ...p, unit: u }),
+    }, `Unit ${u} · ${unitById(u).title}`));
+  }
+  card.append(chips);
+
+  card.append(h('h2', {}, 'When is the test?'));
+  const days = [];
+  for (let d = today; days.length < 6; d = addDays(d, 1)) if (isSchoolDay(d)) days.push(d);
+  const list = h('div', { class: 'ci-buttons' });
+  for (const d of days) {
+    const [, m, dd] = d.split('-').map(Number);
+    const label = `${d === today ? 'Today' : d === addDays(today, 1) ? 'Tomorrow' : WEEKDAYS[weekday(d)]} · ${dd} ${MONTHS[m - 1]}`;
+    list.append(h('button', {
+      class: 'btn wide ' + (current && current.day === d && current.unit === unit ? 'primary' : 'subtle'),
+      onclick: () => {
+        setTest(slice, unit, d, today);
+        store.save();
+        toast(`Unit ${unit} test ${whenLabel(d, today)} — test practice is ready!`, 2600);
+        back();
+      },
+    }, label));
+  }
+  card.append(list);
+  if (current) {
+    card.append(h('button', {
+      class: 'btn subtle',
+      onclick: () => { clearTest(slice); store.save(); toast('Test removed'); back(); },
+    }, 'Remove the test'));
+  }
+  return wrap;
+});
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // The progress line under the Today card: where the class is in the book.
 export function schoolProgressCard(slice) {

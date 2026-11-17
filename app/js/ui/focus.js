@@ -8,6 +8,7 @@ import { NEW_TOPIC_TIERS, reviewTier } from '../engine/scheduler.js';
 import {
   completeTopic, rescheduleReviewed, finishSession, applyDiagnostic,
 } from '../engine/progress.js';
+import { weakLessons } from '../maths/school.js';
 
 export const FOCUS_REVIEW_ITEMS = 6;
 
@@ -87,6 +88,8 @@ export function applySessionEnd(state, s, today) {
     total: all.length, correct: all.filter((r) => r.ok).length, minutes,
     // A tomorrow's-lesson round (maths/school.js) names the lesson it prepared.
     ...(s.lessonId ? { lesson: s.lessonId } : {}),
+    // A test-practice round names its unit and the lessons still to practise (B11).
+    ...(s.kind === 'test' ? { unit: s.testUnit, weak: weakLessons(s), ...(s.tricky ? { tricky: true } : {}) } : {}),
   };
 
   if (s.focus && s.kind === 'focus-review') {

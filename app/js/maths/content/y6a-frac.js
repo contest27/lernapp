@@ -28,8 +28,11 @@ export function simplify(n, d) {
   const g = gcd(n, d);
   return [n / g, d / g];
 }
+// The wrapper keeps the whole number and its fraction on one line (CSS .mixed);
+// a prompt broke "= □" and "2/10" across two lines on the iPad (2026-11-17).
+// The text inside is unchanged, so option comparisons and stripped answers are too.
 export function mixed(w, n, d) {
-  return `${w} ${fr(n, d)}`;
+  return `<span class="mixed">${w} ${fr(n, d)}</span>`;
 }
 function twoNames(rng) {
   const a = pick(rng, NAMES);

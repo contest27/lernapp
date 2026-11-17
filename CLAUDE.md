@@ -81,6 +81,8 @@ B8 class tracker + tomorrow's-lesson warm-up ✓ (2026-11-10; lesson register
 `content/lessons.js`, lesson-precise previews U4–U6, `maths/school.js`, English hidden) →
 B9 four-quadrant grid for U6 L2–L4 + book 6B Unit 7 Decimals ✓ (2026-11-10;
 `coordGrid4` in vis.js, topics in `content/y6b.js`, warm-ups `y6b-lessons-u7.js`) →
-B10 Unit 8 Percentages ✓ (2026-11-10; topics in `y6b.js`, warm-ups `y6b-lessons-u8.js`) —
+B10 Unit 8 Percentages ✓ (2026-11-10; topics in `y6b.js`, warm-ups `y6b-lessons-u8.js`) →
+B11 unit test practice ✓ (2026-11-17; test day entered by child or parent, one question
+per lesson of the unit, per-lesson result, "tricky ones" round) —
 open: Units 9–12 (6B) and 6C; each 6B unit is about two school weeks of class time.
 Plan of record: `~/.claude/plans/inherited-crafting-lantern.md`.

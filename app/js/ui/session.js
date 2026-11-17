@@ -20,7 +20,7 @@ import { segmentEl, exampleEl, explanationSheet } from './explain.js';
 import { attachGloss } from './gloss.js';
 import { dayPlan, activeDeferrals } from '../shell/rhythm.js';
 import { BUILD } from '../shell/build.js';
-import { buildPreviewSession, previewTopicView } from '../maths/school.js';
+import { buildPreviewSession, previewTopicView, buildTestSession, testResults } from '../maths/school.js';
 import { lessonById, lessonLabel } from '../maths/content/lessons.js';
 import * as tts from '../tts.js';
 
@@ -106,6 +106,21 @@ export function startOrResumePreview() {
   const today = dayKey();
   const rng = makeRng(seedFromString(today + '|preview|' + (cur().school?.pos ?? '') + '|' + Date.now()));
   cur().activeSession = buildPreviewSession(cur(), today, rng);
+  store.save();
+  go('session');
+}
+
+// The unit-test practice round (B11). Also in the daily slot: a full round in
+// progress is resumed; asking for the tricky ones (lessonIds) always builds new.
+export function startOrResumeTest(unit, lessonIds = null) {
+  const s = cur().activeSession;
+  if (!lessonIds && isResumable(s) && s.kind === 'test' && !s.tricky && s.testUnit === unit && s.phase !== 'summary') {
+    go('session');
+    return;
+  }
+  const today = dayKey();
+  const rng = makeRng(seedFromString(today + '|test|' + unit + '|' + Date.now()));
+  cur().activeSession = buildTestSession(cur(), today, rng, unit, lessonIds);
   store.save();
   go('session');
 }
@@ -288,6 +303,9 @@ function itemView(s) {
     wrap.append(h('div', { class: 'review-tag' }, '🔁 ' + topicById(item.topicId).shortTitle));
   } else if (item.tag === 'catchup') {
     wrap.append(h('div', { class: 'review-tag' }, `📒 Today's pages · ${lessonById(item.lessonId)?.title ?? ''}`));
+  } else if (item.tag === 'test') {
+    // The lesson is not named here — in the test it is not either. The summary names it.
+    wrap.append(h('div', { class: 'review-tag' }, `📝 Test practice · Unit ${s.testUnit}`));
   } else if (item.tag === 'preview') {
     wrap.append(h('div', { class: 'review-tag' }, `🔭 Tomorrow · ${lessonById(item.lessonId)?.title ?? ''}`));
   }
@@ -418,7 +436,8 @@ export function answerHtml(q) {
 }
 
 function recordResult(s, item, firstTryOk) {
-  s.results.push({ part: item.part, topicId: item.topicId, ok: firstTryOk });
+  // lessonId lets the test summary report per lesson (B11); null elsewhere.
+  s.results.push({ part: item.part, topicId: item.topicId, lessonId: item.lessonId ?? null, ok: firstTryOk });
   if (item.part === 'diagnostic') {
     const d = (s.diag[item.strand] ??= { correct: 0, total: 0 });
     d.total += 1;
@@ -444,6 +463,35 @@ function endItems(s) {
   return summaryView(s);
 }
 
+// The test-practice summary (B11): every lesson of the round with a tick or
+// "practise more", and one tap to a short round on exactly those.
+function testSummary(s, card) {
+  const rows = testResults(s);
+  const weak = rows.filter((r) => !r.solid).map((r) => r.lessonId);
+  card.append(h('div', { class: 'big-emoji' }, '📝'),
+    h('h1', {}, s.tricky ? 'Tricky ones done!' : 'Test practice done!'),
+    h('p', { class: 'sum-line' }, `Unit ${s.testUnit} · ${s.summary.practice.ok} of ${s.summary.practice.total} first try`));
+  const list = h('div', { class: 'test-rows' });
+  for (const r of rows) {
+    const l = lessonById(r.lessonId);
+    list.append(h('div', { class: 'test-row' + (r.solid ? ' solid' : ' weak') },
+      h('span', { class: 'test-mark' }, r.solid ? '✓' : '↻'),
+      h('span', { class: 'test-l' }, `L${l.n}`),
+      h('span', { class: 'test-t' }, l.title),
+      h('span', { class: 'test-note' }, r.solid ? '' : 'practise more')));
+  }
+  card.append(list);
+  if (weak.length) {
+    card.append(h('button', {
+      class: 'btn primary wide big',
+      onclick: () => startOrResumeTest(s.testUnit, weak),
+    }, `Practise the tricky ones (${weak.length}) ▶`));
+  } else {
+    card.append(h('p', { class: 'sum-line' }, 'Every lesson right first time — you are ready!'));
+  }
+  card.append(h('p', { class: 'sum-streak' }, `🔥 Streak: ${store.state.shell.streak.count} day${store.state.shell.streak.count === 1 ? '' : 's'}`));
+}
+
 function summaryView(s) {
   const wrap = h('div', { class: 'screen center' });
   const card = h('div', { class: 'card summary' });
@@ -455,6 +503,8 @@ function summaryView(s) {
       h('h1', {}, 'All warmed up' + (name ? ', ' + name : '') + '!'),
       h('p', {}, 'Now I know what to practise with you. Tomorrow we start properly — one topic a day.'),
     );
+  } else if (s.kind === 'test') {
+    testSummary(s, card);
   } else {
     const t = s.newTopic ? topicById(s.newTopic) : null;
     const ready = s.kind === 'preview' && s.hasPreview ? lessonById(s.lessonId) : null;

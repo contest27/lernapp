@@ -63,8 +63,9 @@ export function curriculumState() {
 // The class tracker. `pos` is a lesson id from content/lessons.js ('u04-l07')
 // or null before the first check-in; `log` holds one entry per check-in:
 // { day, lesson (id or null for "no new lesson"), finished (true/false/null) }.
+// `test` is an announced unit test, { unit, day, set }, or null (B11).
 export function schoolState() {
-  return { pos: null, lastCheckin: null, log: [] };
+  return { pos: null, lastCheckin: null, log: [], test: null };
 }
 
 // The English module's state — Wordforge's own defaultState() minus the

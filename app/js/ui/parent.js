@@ -15,7 +15,7 @@ import { seedY6FromY5, seedReviewPoolFromY5, seededStrands } from '../maths/y5-b
 import * as tts from '../tts.js';
 import { englishSection } from '../english/ui/parent-section.js';
 import { lessonById, lessonLabel, previewOf } from '../maths/content/lessons.js';
-import { predictedLesson } from '../maths/school.js';
+import { predictedLesson, activeTest, clearTest } from '../maths/school.js';
 
 // What kind of help each logged entry was. 'translate'/'wordhelp' were the Y5
 // full-text German paths, retired 2026-08-16; they stay in the map so imported
@@ -103,6 +103,8 @@ registerScreen('parent', () => {
   for (const s of items) {
     const label = s.kind === 'diagnostic' ? 'Warm-up check'
       : s.kind === 'preview' && s.lesson ? `Ready for ${lessonLabel(s.lesson)}`
+      : s.kind === 'test' ? `Unit ${s.unit} test practice${s.tricky ? ' (tricky ones)' : ''}`
+        + (s.weak?.length ? ` — practise more: ${s.weak.map((id) => 'L' + (lessonById(id)?.n ?? '?')).join(', ')}` : ' — all right first time')
       : s.topicId ? (topicById(s.topicId)?.shortTitle ?? s.topicId) : 'Review';
     hist.append(h('div', { class: 'hrow' },
       h('span', {}, s.day), h('span', { class: 'grow' }, label),
@@ -446,6 +448,23 @@ function trackerSection(slice) {
     onclick: () => go('checkin', { step: 'browse', parent: true, unit: sch.pos ? lessonById(sch.pos).unit : 4 }),
   }, 'Correct the position'));
 
+  // Unit test (B11): while one is set, test practice leads the Today card.
+  const test = activeTest(slice, dayKey());
+  sec.append(h('h3', { class: 'sub' }, 'Unit test'));
+  if (test) {
+    sec.append(h('p', {}, 'Set: ', h('b', {}, `Unit ${test.unit} test on ${test.day}`),
+      ' — until then the Today card leads with practice for the whole unit.'),
+    h('div', { class: 'row' },
+      h('button', { class: 'btn subtle', onclick: () => go('testdate', { parent: true }) }, 'Change'),
+      h('button', {
+        class: 'btn subtle',
+        onclick: () => { clearTest(slice); store.save(); toast('Test removed'); go('parent'); },
+      }, 'Remove')));
+  } else {
+    sec.append(h('p', { class: 'muted' }, 'No test set. He can set one from the Today card, or you here.'),
+      h('button', { class: 'btn subtle', onclick: () => go('testdate', { parent: true }) }, 'Set a test day'));
+  }
+
   const log = sch.log.slice(-12).reverse();
   if (log.length) {
     const recent = sch.log.filter((e) => e.lesson).slice(-10);
@@ -455,7 +474,8 @@ function trackerSection(slice) {
     for (const e of log) {
       sec.append(h('div', { class: 'hrow' },
         h('span', {}, e.day),
-        h('span', { class: 'grow' }, e.lesson ? `${lessonLabel(e.lesson)} ${lessonById(e.lesson)?.title ?? ''}` : 'no new lesson'),
+        h('span', { class: 'grow' }, e.lesson ? `${lessonLabel(e.lesson)} ${lessonById(e.lesson)?.title ?? ''}`
+          : e.note === 'test' ? '📝 unit test' : 'no new lesson'),
         h('span', {}, e.finished === true ? '✓' : e.finished === false ? '⏳ not finished' : '')));
     }
   }

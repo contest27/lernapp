@@ -3,7 +3,7 @@
 
 // MUST match BUILD in app/js/shell/build.js — the app compares it against the
 // stamp on a stored session, and the test suite fails if the two drift apart.
-const CACHE_VERSION = 'lernapp-v19';
+const CACHE_VERSION = 'lernapp-v20';
 
 // English (Wordforge) chapter narration MP3s live in their own long-lived
 // cache that SURVIVES CACHE_VERSION bumps: they are addressed by chapter

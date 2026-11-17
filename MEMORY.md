@@ -153,6 +153,23 @@ Project-scope memory. Cross-project lessons go to `~/.claude/MEMORY.md`.
   (unit `%`) and read "35%" in the feedback; amounts through `pctOf()`, which
   stays exact for the same reason as `dv()`.
 
+- **2026-11-17 — B11: unit test practice.** The class writes a test at the
+  end of a unit (first one: Unit 4, the week of 17 Nov). Severin (Today card,
+  "📝 Test coming up?") or a parent enters the unit and the day
+  (`school.test = { unit, day, set }`). Until then the Today card leads with a
+  round of one question per lesson of the unit at tier 2, shuffled (Unit 4:
+  eleven), and tomorrow's warm-up becomes a second button. On the test day the
+  practice comes before the check-in, which then offers "We had the Unit N test
+  today" (`note: 'test'`, clears the test). Sebastian's choices: Unit 4 only,
+  the NORMAL practice mechanics (hint, second try), a test day that is
+  entered. The summary lists every lesson as ✓ or "practise more" and offers
+  the tricky ones (2 per lesson, tiers 1–2); the history entry carries `unit`
+  and `weak`, which the parent corner prints.
+  - **[LEARN:content] A mixed number must not wrap.** "= □" and its fraction
+    broke across two lines at iPad width. `mixed()` (y6a-frac.js) now wraps
+    whole and fraction in `<span class="mixed">` (CSS nowrap); the text inside
+    is unchanged, so option comparisons and stripped answers are too.
+
 ## Learnings
 
 - (Inherited, still binding here: `Object.assign` on nested state drops new

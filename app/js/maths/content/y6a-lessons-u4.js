@@ -710,7 +710,7 @@ export const lessonPreviewsU4 = {
           tier, hint: `Add the wholes and the fractions. Then write the answer as an improper fraction in ${PARTS[d2]}.`,
           explain: `${steps} As an improper fraction: ${mx(...ans)} = ${fr(T, d2)}.` });
       }
-      return num(`Find the missing number: ${sum} = □ ${fr(ans[1], d2)}`, ans[0], {
+      return num(`Find the missing number: ${sum} = ${mixed('□', ans[1], d2)}`, ans[0], {
         tier, hint: 'Do the fractions make more than 1 whole? If they do, exchange it and add 1 to the wholes.',
         explain: steps });
     },
@@ -743,7 +743,7 @@ export const lessonPreviewsU4 = {
         }
         if (shape === 2) {
           const d = pick(rng, [3, 4, 5, 6, 8]), n = numer(rng, 1, d - 1, d), w = ri(rng, 2, 5);
-          return num(`Exchange one whole for ${PARTS[d]}: ${mx(w, n, d)} = ${w - 1} ${fr('□', d)}`, d + n, {
+          return num(`Exchange one whole for ${PARTS[d]}: ${mx(w, n, d)} = ${mixed(w - 1, '□', d)}`, d + n, {
             tier, hint: `One whole is ${fr(d, d)}. Add it to ${fr(n, d)}.`,
             explain: `${mx(w, n, d)} = ${w - 1} + ${fr(d, d)} + ${fr(n, d)} = ${mx(w - 1, d + n, d)}. The missing number is ${d + n}.` });
         }
