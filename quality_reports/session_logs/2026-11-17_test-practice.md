@@ -38,3 +38,21 @@ Severin or the parent enters.
   is back → the parent corner shows the test with change/remove, and the history line
   "Unit 4 test practice — practise more: L8, L9".
 - Build/cache: lernapp-v20.
+- Deployed a452fa7 (lernapp-v20).
+
+## 2026-11-18 — the test-week card offers a choice
+
+- Sebastian: on opening, Severin must be able to choose between test practice and tomorrow's
+  material, and must not land in the test automatically. Before, nothing started on its
+  own, but the test was the big button and the warm-up a small one, so it was not a fair
+  choice.
+- Now: "What would you like to do?" with two equal buttons, each with a line about what it
+  is and a status (Start / Part-way through — continue / Done today — again).
+- Both rounds share the daily slot, and switching used to rebuild the other one. The round
+  he leaves is now parked in `parkedSession` and resumes (`takeRound`, `openRound`,
+  `isTestRound` in ui/session.js). A check-in still drops a parked preview, because it
+  prepared the wrong lesson.
+- Gate: 116 passed, 0 failed. Manual pass at 768×1024: the card shows two equal choices →
+  the warm-up gets to intro part 2 → back → the test reaches 1/11 → back → both show
+  "Part-way through — continue" → the warm-up resumes at part 2 of 2.
+- Build/cache: lernapp-v21.

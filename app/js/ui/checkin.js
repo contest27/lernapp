@@ -19,7 +19,9 @@ import {
   applyCheckin, checkinDue, predictedLesson, isSchoolDay, planPreview, lessonsDone,
   activeTest, setTest, clearTest, testLessons, testUnitDefault, weekday,
 } from '../maths/school.js';
-import { startOrResumePreview, startOrResumeTest } from './session.js';
+import {
+  startOrResumePreview, startOrResumeTest, openRound, isPreviewRound, isTestRound,
+} from './session.js';
 import { attachGloss } from './gloss.js';
 
 // A recognisable example of a lesson's task type — always the same one for the
@@ -51,9 +53,11 @@ function finish(params, lesson, finished, note = null) {
   const slice = cur();
   const today = dayKey();
   applyCheckin(slice, today, { lesson, finished, note });
-  // A round built before this check-in prepared the wrong lesson.
+  // A round built before this check-in prepared the wrong lesson — in the slot
+  // or parked behind a test-practice round.
   const s = slice.activeSession;
   if (s && s.kind === 'preview' && s.phase !== 'summary') slice.activeSession = null;
+  if (slice.parkedSession?.kind === 'preview') slice.parkedSession = null;
   store.save();
   const next = predictedLesson(slice);
   toast(next ? `Got it! Next up: ${lessonLabel(next.id)} ${next.title}` : 'Got it!', 2600);
@@ -212,8 +216,7 @@ export function schoolTodayCard(slice, today) {
     return card;
   }
 
-  const s = slice.activeSession;
-  const inProgress = s && s.kind === 'preview' && s.day === today && s.phase !== 'summary';
+  const inProgress = !!openRound(slice, isPreviewRound); // in the slot or parked
   const doneToday = slice.history.some((e) => e.day === today && e.kind === 'preview');
   const plan = planPreview(slice, today, makeRng(seedFromString(today)));
   const target = plan.target ? lessonById(plan.target) : null;
@@ -260,34 +263,56 @@ function whenLabel(day, today) {
 }
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-// The Today card while a unit test lies ahead: test practice is the main
-// button, tomorrow's warm-up stays one tap away.
+// One of the two equal choices on the test-week card: icon, what it is, and a
+// line saying how far he got today.
+function choiceEl({ icon, title, sub, status, onclick }) {
+  return h('button', { class: 'choice', onclick },
+    h('span', { class: 'choice-icon' }, icon),
+    h('b', { class: 'choice-title' }, title),
+    h('span', { class: 'choice-sub' }, sub),
+    status ? h('span', { class: 'choice-status' }, status) : null);
+}
+
+// The Today card while a unit test lies ahead. Two EQUAL choices — practise
+// for the test, or get ready for tomorrow's lesson — and nothing starts until
+// he picks one (Sebastian, 2026-11-18: it must not slide him into the test).
 function testTodayCard(slice, today, test, card) {
-  const s = slice.activeSession;
-  const inProgress = s && s.kind === 'test' && s.day === today && s.phase !== 'summary';
-  const todays = slice.history.filter((e) => e.day === today && e.kind === 'test');
-  const lastWeak = todays.at(-1)?.weak ?? [];
+  const testOpen = openRound(slice, isTestRound(test.unit));
+  const testsToday = slice.history.filter((e) => e.day === today && e.kind === 'test');
+  const lastWeak = testsToday.at(-1)?.weak ?? [];
   const n = testLessons(test.unit).length;
+  const plan = planPreview(slice, today, makeRng(seedFromString(today)));
+  const previewOpen = openRound(slice, isPreviewRound);
+  const previewDone = slice.history.some((e) => e.day === today && e.kind === 'preview');
 
   card.append(h('h2', {}, `📝 Unit ${test.unit} test ${whenLabel(test.day, today)}`),
-    h('p', {}, `${unitById(test.unit).title}: ${n} questions, one from every lesson — practise the whole unit.`));
-  if (inProgress) card.append(h('p', { class: 'muted' }, 'You were part-way through. Pick up where you left off!'));
-  card.append(h('button', { class: 'btn primary wide big start', onclick: () => startOrResumeTest(test.unit) },
-    inProgress ? 'Continue ▶' : todays.length ? 'Practise again ▶' : 'Start test practice ▶'));
-  if (!inProgress && lastWeak.length) {
-    card.append(h('button', { class: 'btn subtle wide', onclick: () => startOrResumeTest(test.unit, lastWeak) },
-      `Practise the tricky ones (${lastWeak.length}) ▶`));
-  }
-  if (todays.length && !inProgress) {
-    card.append(h('p', { class: 'muted center-t' }, lastWeak.length
-      ? '✅ Test practice done today.'
-      : '✅ Test practice done today — every lesson right first time!'));
-  }
+    h('p', { class: 'muted' }, 'What would you like to do?'));
 
-  const plan = planPreview(slice, today, makeRng(seedFromString(today)));
+  const choices = h('div', { class: 'choices' });
+  choices.append(choiceEl({
+    icon: '📝',
+    title: `Practise for the Unit ${test.unit} test`,
+    sub: `${n} questions, one from every lesson of ${unitById(test.unit).title}`,
+    status: testOpen ? 'Part-way through — continue ▶'
+      : testsToday.length ? (lastWeak.length ? '✅ Done today — again ▶' : '✅ Done today, all right first time — again ▶')
+        : 'Start ▶',
+    onclick: () => startOrResumeTest(test.unit),
+  }));
   if (plan.hasPreview) {
-    card.append(h('button', { class: 'btn subtle wide', onclick: startOrResumePreview },
-      `🔭 Tomorrow's warm-up: ${lessonLabel(plan.target)}`));
+    const t = lessonById(plan.target);
+    choices.append(choiceEl({
+      icon: '🔭',
+      title: 'Get ready for tomorrow',
+      sub: `${lessonLabel(t.id)} · ${t.title}`,
+      status: previewOpen ? 'Part-way through — continue ▶' : previewDone ? '✅ Done today — again ▶' : 'Start ▶',
+      onclick: startOrResumePreview,
+    }));
+  }
+  card.append(choices);
+
+  if (!testOpen && lastWeak.length) {
+    card.append(h('button', { class: 'btn subtle wide', onclick: () => startOrResumeTest(test.unit, lastWeak) },
+      `📝 Practise the tricky ones from the test practice (${lastWeak.length}) ▶`));
   }
   if (checkinDue(slice, today)) {
     card.append(h('button', { class: 'btn subtle wide', onclick: () => go('checkin') }, '📒 Check in: what did you do in maths today?'));

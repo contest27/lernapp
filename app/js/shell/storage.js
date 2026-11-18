@@ -55,6 +55,7 @@ export function curriculumState() {
     // the class did, as the child reported it, and the check-in log.
     school: schoolState(),
     activeSession: null,
+    parkedSession: null, // a half-done daily-slot round he switched away from (ui/session.js takeRound)
     focusSession: null,
     streak: null,      // ALIAS of shell.streak, restored by hydrate — never its own object
   };

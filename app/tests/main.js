@@ -808,6 +808,33 @@ async function run() {
     eq(t.items.map((i) => [i.lessonId, i.q.tier]), [['u04-l08', 1], ['u04-l08', 2], ['u04-l09', 1], ['u04-l09', 2]]);
   });
 
+  test('test week: switching between test practice and the warm-up parks the half-done round', () => {
+    const slice = trackerSlice();
+    S.applyCheckin(slice, dayKeyToday(), { lesson: 'u04-l11', finished: true });
+    const Ss = mods.session;
+    const preview = Ss.takeRound(slice, Ss.isPreviewRound, () => S.buildPreviewSession(slice, dayKeyToday(), makeRng(1)));
+    preview.idx = 3; // part-way through
+    const test = Ss.takeRound(slice, Ss.isTestRound(4), () => S.buildTestSession(slice, dayKeyToday(), makeRng(2), 4));
+    eq(slice.activeSession, test, 'the test round takes the slot');
+    eq(slice.parkedSession, preview, 'the warm-up waits instead of being thrown away');
+    test.idx = 5;
+    const back = Ss.takeRound(slice, Ss.isPreviewRound, () => { throw new Error('must not rebuild'); });
+    eq(back, preview);
+    eq(back.idx, 3, 'the warm-up continues where it stopped');
+    eq(slice.parkedSession, test, 'and now the test round waits');
+    eq(Ss.openRound(slice, Ss.isTestRound(4)).idx, 5, 'the card can still offer "continue"');
+
+    // Tricky rounds match only their own lessons; a finished round is not parked.
+    const tricky = Ss.isTestRound(4, ['u04-l09', 'u04-l08']);
+    ok(tricky(S.buildTestSession(slice, dayKeyToday(), makeRng(3), 4, ['u04-l08', 'u04-l09'])), 'same lessons, any order');
+    ok(!tricky(test), 'not the full round');
+    ok(!Ss.isTestRound(4)(S.buildTestSession(slice, dayKeyToday(), makeRng(3), 4, ['u04-l08'])), 'the full-round match skips tricky rounds');
+    slice.activeSession.phase = 'summary';
+    slice.parkedSession = null;
+    Ss.takeRound(slice, Ss.isTestRound(4), () => S.buildTestSession(slice, dayKeyToday(), makeRng(4), 4));
+    eq(slice.parkedSession, null, 'a finished round is not parked');
+  });
+
   test('test practice: results per lesson, and the history names the unit and the weak lessons', () => {
     const slice = trackerSlice();
     const s = S.buildTestSession(slice, dayKeyToday(), makeRng(4), 4);

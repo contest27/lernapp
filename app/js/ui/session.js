@@ -94,33 +94,64 @@ export function startOrResume() {
   go('session');
 }
 
+// ---- the two rounds of a test week (B8 preview, B11 test practice)
+//
+// Both live in the daily slot, so resuming and the stale-build guard work as
+// for the old daily lesson. Before a test he may switch between them, so the
+// round he leaves half-done waits in `parkedSession` and picks up where it
+// stopped when he comes back (2026-11-18: until then, switching threw it away).
+
+function isOpen(s) {
+  return isResumable(s) && s.phase !== 'summary';
+}
+
+// Put the round that `match` describes into the daily slot: the one already
+// there, the parked one, or a new one from `build`. A different open round in
+// the slot is parked rather than lost. Mutates the slice; no DOM, no store.
+export function takeRound(slice, match, build) {
+  const a = slice.activeSession;
+  if (isOpen(a) && match(a)) return a;
+  const p = slice.parkedSession;
+  let next;
+  if (isOpen(p) && match(p)) { next = p; slice.parkedSession = null; }
+  else next = build();
+  if (isOpen(a)) slice.parkedSession = a;
+  slice.activeSession = next;
+  return next;
+}
+
+// The open round of a kind, wherever it waits (for "Continue" on the cards).
+export function openRound(slice, match) {
+  return [slice.activeSession, slice.parkedSession].find((s) => isOpen(s) && match(s)) ?? null;
+}
+
+export const isPreviewRound = (s) => s.kind === 'preview';
+export function isTestRound(unit, lessonIds = null) {
+  const key = lessonIds ? [...lessonIds].sort().join() : null;
+  return (s) => s.kind === 'test' && s.testUnit === unit
+    && (key ? !!s.tricky && [...s.lessonIds].sort().join() === key : !s.tricky);
+}
+
 // The class-tracker round (maths/school.js): tomorrow's lesson, plus today's
-// unfinished pages and a short review. It lives in the daily slot, so resuming
-// and the stale-build guard work exactly as for the old daily lesson.
+// unfinished pages and a short review.
 export function startOrResumePreview() {
-  const s = cur().activeSession;
-  if (isResumable(s) && s.kind === 'preview' && s.phase !== 'summary') {
-    go('session');
-    return;
-  }
-  const today = dayKey();
-  const rng = makeRng(seedFromString(today + '|preview|' + (cur().school?.pos ?? '') + '|' + Date.now()));
-  cur().activeSession = buildPreviewSession(cur(), today, rng);
+  takeRound(cur(), isPreviewRound, () => {
+    const today = dayKey();
+    const rng = makeRng(seedFromString(today + '|preview|' + (cur().school?.pos ?? '') + '|' + Date.now()));
+    return buildPreviewSession(cur(), today, rng);
+  });
   store.save();
   go('session');
 }
 
-// The unit-test practice round (B11). Also in the daily slot: a full round in
-// progress is resumed; asking for the tricky ones (lessonIds) always builds new.
+// The unit-test practice round (B11): the whole unit, or with `lessonIds` the
+// short round on the lessons that went wrong.
 export function startOrResumeTest(unit, lessonIds = null) {
-  const s = cur().activeSession;
-  if (!lessonIds && isResumable(s) && s.kind === 'test' && !s.tricky && s.testUnit === unit && s.phase !== 'summary') {
-    go('session');
-    return;
-  }
-  const today = dayKey();
-  const rng = makeRng(seedFromString(today + '|test|' + unit + '|' + Date.now()));
-  cur().activeSession = buildTestSession(cur(), today, rng, unit, lessonIds);
+  takeRound(cur(), isTestRound(unit, lessonIds), () => {
+    const today = dayKey();
+    const rng = makeRng(seedFromString(today + '|test|' + unit + '|' + Date.now()));
+    return buildTestSession(cur(), today, rng, unit, lessonIds);
+  });
   store.save();
   go('session');
 }

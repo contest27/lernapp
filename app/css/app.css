@@ -453,6 +453,16 @@ h1, h2, h3 { margin: 0 0 8px; }
 .ci-t { flex: 1; font-weight: 600; }
 .ci-mark { font-size: 0.75rem; font-weight: 800; color: var(--muted); background: #f1f5f9; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
 .ci-mark.next { color: #92400e; background: #fef3c7; }
+/* ---- test-week choice: two equal buttons (checkin.js testTodayCard) ---- */
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 10px 0 12px; }
+.choice { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; padding: 16px; min-height: 150px;
+  border-radius: var(--radius); border: 2px solid var(--brand); background: #f8fcff; box-shadow: 0 3px 0 var(--brand-dark); }
+.choice:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--brand-dark); }
+.choice-icon { font-size: 1.8rem; line-height: 1; }
+.choice-title { font-size: 1.15rem; font-weight: 800; color: var(--ink); }
+.choice-sub { color: var(--muted); font-size: 0.92rem; flex: 1; }
+.choice-status { margin-top: 6px; font-weight: 800; color: var(--brand-dark); }
+
 /* ---- unit test practice summary (session.js, B11) ---- */
 .test-rows { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; text-align: left; }
 .test-row { display: flex; align-items: baseline; gap: 10px; border-radius: 12px; padding: 8px 12px; background: var(--good-bg); }

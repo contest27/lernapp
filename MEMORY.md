@@ -165,6 +165,12 @@ Project-scope memory. Cross-project lessons go to `~/.claude/MEMORY.md`.
   entered. The summary lists every lesson as ✓ or "practise more" and offers
   the tricky ones (2 per lesson, tiers 1–2); the history entry carries `unit`
   and `weak`, which the parent corner prints.
+  - **2026-11-18 — the test-week card is a choice, not a default.** Sebastian:
+    it must not slide him into the test. Two equal buttons ("Practise for
+    the Unit N test" / "Get ready for tomorrow"), nothing starts until he
+    taps one. Both rounds share the daily slot, so the one he leaves
+    half-done is parked in `slice.parkedSession` and resumes later
+    (`takeRound` in ui/session.js); before this, switching rebuilt it.
   - **[LEARN:content] A mixed number must not wrap.** "= □" and its fraction
     broke across two lines at iPad width. `mixed()` (y6a-frac.js) now wraps
     whole and fraction in `<span class="mixed">` (CSS nowrap); the text inside
